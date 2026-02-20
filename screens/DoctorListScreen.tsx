@@ -80,7 +80,7 @@ export const DOCTORS_DATA: Doctor[] = [
     rating: 4.3,
     reviews: 56,
     price: 90,
-    image: 'https://images.unsplash.com/photo-1622253692010-333f2da60a71?auto=format&fit=crop&q=80&w=300&h=300',
+    image: 'https://images.unsplash.com/photo-1582750433449-648ed127bb54?auto=format&fit=crop&q=80&w=300&h=300',
     nextAvailable: 'Mañana, 4:00 PM',
     about: 'Especialista en trastornos del sistema nervioso central y periférico. Experiencia en tratamiento de migrañas crónicas y epilepsia.',
     experience: 7,

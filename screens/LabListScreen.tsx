@@ -39,7 +39,7 @@ export const LABS_DATA: Laboratory[] = [
     rating: 4.8,
     reviews: 210,
     distance: '4.1 km',
-    image: 'https://images.unsplash.com/photo-1581093458791-9f3c3900df4b?auto=format&fit=crop&q=80&w=400',
+    image: 'https://images.unsplash.com/photo-1581093588401-fbb62a02f120?auto=format&fit=crop&q=80&w=400',
     services: [SERVICES[0], SERVICES[1], SERVICES[4]],
     hours: '6:30 AM - 6:00 PM',
     phone: '0261-999-2222'
