@@ -2,7 +2,6 @@
   "name": "app-dr.-goyo",
   "private": true,
   "version": "0.0.0",
-  "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "prisma generate --schema=backend/prisma/schema.prisma && vite build",
