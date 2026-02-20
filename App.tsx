@@ -137,11 +137,6 @@ const App: React.FC = () => {
   };
 
   // --- Public App Auth ---
-<<<<<<< HEAD
-  const handleLoginSuccess = () => {
-     setUserRole('patient');
-     setCurrentScreen('home');
-=======
   const handleLoginSuccess = (role: string) => {
      setUserRole(role);
      
@@ -154,7 +149,6 @@ const App: React.FC = () => {
      } else {
        setCurrentScreen('home'); // Patient
      }
->>>>>>> ed3d2fa (Mi primera actualización desde la laptop)
   };
 
   const handleRegisterSuccess = (role: string) => {
@@ -287,11 +281,7 @@ const App: React.FC = () => {
           />
         );
       case 'login':
-<<<<<<< HEAD
-        return <LoginScreen onBack={goBack} onLoginSuccess={handleLoginSuccess} />;
-=======
         return <LoginScreen onBack={goBack} onLoginSuccess={(role) => handleLoginSuccess(role)} />;
->>>>>>> ed3d2fa (Mi primera actualización desde la laptop)
       case 'role_select':
         return (
           <RoleSelectionScreen 
