@@ -15,7 +15,7 @@ export const DoctorCard: React.FC<DoctorCardProps> = ({ doctor, onBook, onClick,
   return (
     <div 
       onClick={onClick}
-      className={`bg-white p-4 rounded-2xl shadow-soft border border-gray-100 flex flex-col gap-3 transition-all hover:shadow-md ${onClick ? 'cursor-pointer' : ''}`}
+      className={`bg-card p-4 rounded-2xl shadow-soft border border-border-main flex flex-col gap-3 transition-all hover:shadow-md ${onClick ? 'cursor-pointer' : ''}`}
     >
       <div className="flex gap-4 relative">
         {doctor.isFeatured && (
@@ -27,13 +27,13 @@ export const DoctorCard: React.FC<DoctorCardProps> = ({ doctor, onBook, onClick,
         <img 
           src={doctor.image} 
           alt={doctor.name} 
-          className="w-20 h-20 rounded-xl object-cover bg-gray-100 flex-shrink-0"
+          className="w-20 h-20 rounded-xl object-cover bg-gray-bg flex-shrink-0"
         />
         
         <div className="flex-1 min-w-0">
           <div className="flex justify-between items-start">
             <div className="truncate pr-2">
-              <h3 className="font-heading font-semibold text-gray-900 truncate">{doctor.name}</h3>
+              <h3 className="font-heading font-semibold text-text-main truncate">{doctor.name}</h3>
               <p className="text-sm text-primary font-medium truncate">{doctor.specialty}</p>
             </div>
             <div className="flex-shrink-0">
@@ -41,19 +41,19 @@ export const DoctorCard: React.FC<DoctorCardProps> = ({ doctor, onBook, onClick,
             </div>
           </div>
           
-          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500">
+          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-light">
             <div className="flex items-center gap-1">
-              <MapPin size={14} className="text-gray-400" />
+              <MapPin size={14} className="text-gray-light" />
               <span>{doctor.location} ({doctor.distance})</span>
             </div>
           </div>
 
           <div className="mt-2 flex items-center justify-between">
-             <span className="font-bold text-gray-900 text-sm">
-               ${doctor.price} <span className="text-gray-400 font-normal text-xs">/consulta</span>
+             <span className="font-bold text-text-main text-sm">
+               ${doctor.price} <span className="text-gray-light font-normal text-xs">/consulta</span>
              </span>
              {doctor.nextAvailable && !compact && (
-                <div className="flex items-center gap-1 text-green-600 bg-green-50 px-2 py-0.5 rounded-md text-xs">
+                <div className="flex items-center gap-1 text-green-500 bg-green-500/10 px-2 py-0.5 rounded-md text-xs">
                   <Clock size={12} />
                   <span>{doctor.nextAvailable}</span>
                 </div>
@@ -63,7 +63,7 @@ export const DoctorCard: React.FC<DoctorCardProps> = ({ doctor, onBook, onClick,
       </div>
       
       {!compact && (
-        <div className="flex gap-3 mt-1 pt-3 border-t border-gray-50">
+        <div className="flex gap-3 mt-1 pt-3 border-t border-border-main">
           <Button 
             label="Ver Perfil" 
             variant="ghost" 

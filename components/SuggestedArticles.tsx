@@ -148,20 +148,20 @@ export const SuggestedArticles: React.FC<SuggestedArticlesProps> = ({ section, o
 
   if (articles.length === 0) {
     return (
-      <div className="bg-gray-50 border border-gray-100 rounded-2xl p-6 text-center mx-4 mb-20">
-        <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-3 text-gray-400">
+      <div className="bg-gray-bg border border-border-main rounded-2xl p-6 text-center mx-4 mb-20 transition-colors">
+        <div className="w-12 h-12 bg-card rounded-full flex items-center justify-center mx-auto mb-3 text-gray-light shadow-sm">
            <BookOpen size={24} />
         </div>
-        <p className="text-gray-500 font-medium text-sm">No hay artículos sugeridos por ahora. ¡Vuelve más tarde!</p>
+        <p className="text-gray-text font-medium text-sm">No hay artículos sugeridos por ahora. ¡Vuelve más tarde!</p>
       </div>
     );
   }
 
   return (
-    <div className="mt-8 mb-6 pl-4 border-t border-gray-100 pt-6">
+    <div className="mt-8 mb-6 pl-4 border-t border-border-main pt-6 transition-colors">
       <div className="flex items-center gap-2 mb-4 pr-4">
         <BookOpen size={18} className="text-primary" />
-        <h3 className="font-heading font-bold text-lg text-gray-900">
+        <h3 className="font-heading font-bold text-lg text-text-main">
           {section === 'doctors' ? 'Lecturas Médicas' : 
            section === 'pharmacy' ? 'Consejos Farmacéuticos' : 
            'Información de Laboratorio'}
@@ -173,7 +173,7 @@ export const SuggestedArticles: React.FC<SuggestedArticlesProps> = ({ section, o
           <div 
             key={article.id}
             onClick={() => onArticleClick && onArticleClick(article)}
-            className="min-w-[260px] max-w-[260px] bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all snap-center flex flex-col overflow-hidden group cursor-pointer"
+            className="min-w-[260px] max-w-[260px] bg-card rounded-2xl border border-border-main shadow-sm hover:shadow-md transition-all snap-center flex flex-col overflow-hidden group cursor-pointer"
           >
             {/* Image */}
             <div className="h-32 w-full overflow-hidden relative">
@@ -182,22 +182,22 @@ export const SuggestedArticles: React.FC<SuggestedArticlesProps> = ({ section, o
                  alt={article.title} 
                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
                />
-               <div className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm px-2 py-0.5 rounded-md text-[10px] font-bold text-primary uppercase">
+               <div className="absolute top-2 left-2 bg-card/90 backdrop-blur-sm px-2 py-0.5 rounded-md text-[10px] font-bold text-primary uppercase border border-border-main">
                   {article.category}
                </div>
             </div>
 
             {/* Content */}
             <div className="p-4 flex flex-col flex-1">
-               <h4 className="font-bold text-gray-900 leading-tight mb-2 line-clamp-2">
+               <h4 className="font-bold text-text-main leading-tight mb-2 line-clamp-2">
                  {article.title}
                </h4>
-               <p className="text-xs text-gray-500 line-clamp-2 mb-4 flex-1">
+               <p className="text-xs text-gray-light line-clamp-2 mb-4 flex-1">
                  {article.subtitle}
                </p>
                
-               <div className="flex items-center justify-between mt-auto pt-3 border-t border-gray-50">
-                  <span className="text-[10px] text-gray-400 font-medium">Por {article.author}</span>
+               <div className="flex items-center justify-between mt-auto pt-3 border-t border-border-main">
+                  <span className="text-[10px] text-gray-light font-medium">Por {article.author}</span>
                   <button className="text-xs font-bold text-secondary flex items-center gap-1 group-hover:gap-2 transition-all">
                     Ver más <ChevronRight size={12} />
                   </button>

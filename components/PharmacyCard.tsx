@@ -17,7 +17,7 @@ export const PharmacyCard: React.FC<PharmacyCardProps> = ({ pharmacy, onClick, h
   return (
     <div 
       onClick={onClick}
-      className={`bg-white rounded-2xl shadow-soft border border-gray-100 overflow-hidden transition-all hover:shadow-md ${onClick ? 'cursor-pointer' : ''}`}
+      className={`bg-card rounded-2xl shadow-soft border border-border-main overflow-hidden transition-all hover:shadow-md ${onClick ? 'cursor-pointer' : ''}`}
     >
       <div className="relative h-32">
         <img 
@@ -27,19 +27,19 @@ export const PharmacyCard: React.FC<PharmacyCardProps> = ({ pharmacy, onClick, h
         />
         <div className="absolute top-3 right-3">
           {pharmacy.isOpen ? (
-            <span className="bg-white/90 backdrop-blur-sm text-green-700 text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1 shadow-sm">
+            <span className="bg-card/90 backdrop-blur-sm text-green-500 text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1 shadow-sm border border-border-main">
               <CheckCircle size={12} /> ABIERTO
             </span>
           ) : (
-            <span className="bg-gray-100/90 backdrop-blur-sm text-gray-500 text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1 shadow-sm">
+            <span className="bg-gray-bg/90 backdrop-blur-sm text-gray-light text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1 shadow-sm border border-border-main">
               <XCircle size={12} /> CERRADO
             </span>
           )}
         </div>
         <div className="absolute bottom-3 left-3">
-           <div className="bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg flex items-center gap-1 shadow-sm">
+           <div className="bg-card/90 backdrop-blur-sm px-2 py-1 rounded-lg flex items-center gap-1 shadow-sm border border-border-main">
               <Star size={12} className="text-yellow-400 fill-yellow-400" />
-              <span className="text-xs font-bold text-gray-800">{pharmacy.rating}</span>
+              <span className="text-xs font-bold text-text-main">{pharmacy.rating}</span>
            </div>
         </div>
       </div>
@@ -47,8 +47,8 @@ export const PharmacyCard: React.FC<PharmacyCardProps> = ({ pharmacy, onClick, h
       <div className="p-4">
         <div className="flex justify-between items-start mb-2">
           <div>
-            <h3 className="font-heading font-semibold text-lg text-gray-900 leading-tight">{pharmacy.name}</h3>
-            <div className="flex items-center gap-1 mt-1 text-gray-500 text-xs">
+            <h3 className="font-heading font-semibold text-lg text-text-main leading-tight">{pharmacy.name}</h3>
+            <div className="flex items-center gap-1 mt-1 text-gray-light text-xs">
               <MapPin size={12} />
               <span>{pharmacy.location} • {pharmacy.distance}</span>
             </div>
@@ -56,12 +56,12 @@ export const PharmacyCard: React.FC<PharmacyCardProps> = ({ pharmacy, onClick, h
         </div>
 
         {searchedItem && (
-          <div className="mt-3 bg-accent/30 p-3 rounded-xl flex justify-between items-center border border-accent">
+          <div className="mt-3 bg-secondary/10 p-3 rounded-xl flex justify-between items-center border border-secondary/20">
             <div className="flex items-center gap-2">
-              <div className="bg-white p-1 rounded-md text-primary">
+              <div className="bg-card p-1 rounded-md text-primary shadow-sm">
                 <ShoppingCart size={14} />
               </div>
-              <span className="text-sm font-medium text-gray-700 truncate max-w-[120px]">
+              <span className="text-sm font-medium text-text-main truncate max-w-[120px]">
                 {searchedItem.name}
               </span>
             </div>
@@ -72,7 +72,7 @@ export const PharmacyCard: React.FC<PharmacyCardProps> = ({ pharmacy, onClick, h
         )}
 
         {!searchedItem && (
-          <div className="mt-3 text-xs text-gray-400 italic">
+          <div className="mt-3 text-xs text-gray-light italic">
             Ver catálogo completo...
           </div>
         )}

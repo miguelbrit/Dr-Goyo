@@ -155,32 +155,32 @@ export const LabListScreen: React.FC<LabListScreenProps> = ({
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col pb-24">
+    <div className="min-h-screen bg-gray-bg flex flex-col pb-24 transition-colors duration-300">
       {/* Header */}
-      <header className="bg-white px-4 py-4 shadow-sm sticky top-0 z-20">
+      <header className="bg-card px-4 py-4 shadow-soft sticky top-0 z-20">
         <div className="flex items-center gap-3 mb-4">
-          <button onClick={onBack} className="p-2 hover:bg-gray-100 rounded-full text-gray-600">
+          <button onClick={onBack} className="p-2 hover:bg-gray-bg rounded-full text-gray-light">
             <ChevronLeft size={24} />
           </button>
-          <h1 className="font-heading font-bold text-xl text-gray-900">Laboratorios</h1>
+          <h1 className="font-heading font-bold text-xl text-text-main">Laboratorios</h1>
           <button 
             onClick={() => setShowFilters(true)}
-            className="ml-auto p-2 bg-gray-100 rounded-full text-gray-600 hover:bg-primary/10 hover:text-primary transition-colors relative"
+            className="ml-auto p-2 bg-gray-bg rounded-full text-gray-light hover:bg-primary/10 hover:text-primary transition-colors relative"
           >
             <Filter size={20} />
             {(selectedLocation || minRating > 0) && (
-              <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-primary rounded-full border-2 border-white"></span>
+              <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-primary rounded-full border-2 border-card"></span>
             )}
           </button>
         </div>
 
         {/* Search Bar */}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-light" size={18} />
           <input 
             type="text" 
             placeholder="Buscar laboratorio, examen o ciudad..." 
-            className="w-full pl-10 pr-4 py-3 bg-gray-50 border-none rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none"
+            className="w-full pl-10 pr-4 py-3 bg-gray-bg border-none rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none text-text-main placeholder:text-gray-light"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -209,7 +209,7 @@ export const LabListScreen: React.FC<LabListScreenProps> = ({
               ))}
             </>
           ) : (
-            <div className="col-span-full text-center py-12 text-gray-400">
+            <div className="col-span-full text-center py-12 text-gray-light">
               <p>No se encontraron laboratorios.</p>
               <button 
                 onClick={() => {
@@ -226,11 +226,13 @@ export const LabListScreen: React.FC<LabListScreenProps> = ({
         </div>
         
         {filteredLabs.length > 0 && (
-          <Pagination 
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={setCurrentPage}
-          />
+          <div className="mt-6">
+            <Pagination 
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+            />
+          </div>
         )}
 
         {/* SUGGESTED ARTICLES BANNER */}
@@ -241,12 +243,12 @@ export const LabListScreen: React.FC<LabListScreenProps> = ({
       {showFilters && (
         <>
           <div className="fixed inset-0 bg-black/40 z-[60] backdrop-blur-sm" onClick={() => setShowFilters(false)} />
-          <div className="fixed bottom-0 left-0 w-full bg-white rounded-t-3xl z-[70] flex flex-col max-h-[80vh] shadow-2xl animate-in slide-in-from-bottom duration-300">
+          <div className="fixed bottom-0 left-0 w-full bg-card rounded-t-3xl z-[70] flex flex-col max-h-[80vh] shadow-2xl animate-in slide-in-from-bottom duration-300">
             
             {/* Modal Header */}
-            <div className="flex justify-between items-center p-6 border-b border-gray-100 shrink-0">
-              <h2 className="font-heading font-bold text-xl">Filtros</h2>
-              <button onClick={() => setShowFilters(false)} className="p-1 text-gray-400 hover:text-gray-600">
+            <div className="flex justify-between items-center p-6 border-b border-border-main shrink-0">
+              <h2 className="font-heading font-bold text-xl text-text-main">Filtros</h2>
+              <button onClick={() => setShowFilters(false)} className="p-1 text-gray-light hover:bg-gray-bg rounded-full transition-colors">
                 <X size={24} />
               </button>
             </div>
@@ -256,7 +258,7 @@ export const LabListScreen: React.FC<LabListScreenProps> = ({
               <div className="space-y-6">
                 {/* Location */}
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-3">Ubicación</label>
+                  <label className="block text-sm font-bold text-gray-text mb-3">Ubicación</label>
                   <div className="flex flex-wrap gap-2">
                     {locations.map(loc => (
                       <button
@@ -264,8 +266,8 @@ export const LabListScreen: React.FC<LabListScreenProps> = ({
                         onClick={() => setSelectedLocation(loc === 'Todos' ? '' : loc)}
                         className={`px-3 py-2 rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-1 ${
                           (selectedLocation === loc || (loc === 'Todos' && selectedLocation === ''))
-                            ? 'bg-secondary text-white shadow-md'
-                            : 'bg-white border border-gray-200 text-gray-600 hover:border-secondary/50'
+                            ? 'bg-secondary text-neutral shadow-md'
+                            : 'bg-card border border-border-main text-gray-text hover:border-secondary/50'
                         }`}
                       >
                         {loc !== 'Todos' && <MapPin size={12} />}
@@ -277,14 +279,14 @@ export const LabListScreen: React.FC<LabListScreenProps> = ({
 
                 {/* Rating */}
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-3">Valoración mínima</label>
-                  <div className="flex justify-between bg-gray-50 p-1 rounded-xl">
+                  <label className="block text-sm font-bold text-gray-text mb-3">Valoración mínima</label>
+                  <div className="flex justify-between bg-gray-bg p-1 rounded-xl">
                     {[0, 3, 4, 4.5].map(rate => (
                        <button
                           key={rate}
                           onClick={() => setMinRating(rate)}
                           className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
-                            minRating === rate ? 'bg-white shadow-sm text-gray-900' : 'text-gray-400'
+                            minRating === rate ? 'bg-card shadow-sm text-text-main' : 'text-gray-light'
                           }`}
                        >
                           {rate === 0 ? 'Todas' : `${rate}+ ⭐`}
@@ -296,10 +298,10 @@ export const LabListScreen: React.FC<LabListScreenProps> = ({
             </div>
 
             {/* Fixed Bottom Button */}
-            <div className="sticky bottom-0 bg-white p-4 border-t shrink-0">
+            <div className="sticky bottom-0 bg-card p-4 border-t border-border-main shrink-0">
               <button 
                 onClick={() => setShowFilters(false)}
-                className="w-full py-3 rounded-xl bg-primary text-white font-semibold shadow-lg shadow-primary/30 active:scale-95 transition-transform"
+                className="w-full py-3 rounded-xl bg-primary text-neutral font-semibold shadow-lg shadow-primary/30 active:scale-95 transition-transform"
               >
                 Aplicar Filtros ({filteredLabs.length})
               </button>

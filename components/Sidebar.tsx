@@ -48,7 +48,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, userName, use
             <div className="flex items-center gap-4 mb-8">
               <Avatar src={userImage} alt={userName} size="lg" />
               <div>
-                <p className="font-bold text-gray-900 text-lg">{userName}</p>
+                <p className="font-bold text-text-main text-lg">{userName}</p>
                 <p className="text-sm text-primary font-medium">Paciente</p>
               </div>
             </div>
@@ -58,7 +58,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, userName, use
                 <button 
                   key={item.id} 
                   onClick={() => setCurrentView(item.id as SidebarView)}
-                  className="w-full flex items-center justify-between p-4 rounded-xl hover:bg-gray-50 text-gray-700 transition-colors group"
+                  className="w-full flex items-center justify-between p-4 rounded-xl hover:bg-gray-bg text-gray-text transition-colors group"
                 >
                   <div className="flex items-center gap-3">
                     <div className="text-primary bg-accent/30 p-2 rounded-lg group-hover:bg-accent group-hover:text-primary transition-colors">
@@ -66,14 +66,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, userName, use
                     </div>
                     <span className="font-medium">{item.label}</span>
                   </div>
-                  <ChevronRight size={18} className="text-gray-300" />
+                  <ChevronRight size={18} className="text-gray-light" />
                 </button>
               ))}
             </div>
 
             <button 
               onClick={handleLogoutClick}
-              className="flex items-center gap-2 text-red-500 font-medium p-4 hover:bg-red-50 rounded-xl transition-colors mt-auto"
+              className="flex items-center gap-2 text-red-500 font-medium p-4 hover:bg-red-50/10 rounded-xl transition-colors mt-auto"
             >
               <LogOut size={20} />
               <span>Cerrar Sesión</span>
@@ -101,18 +101,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, userName, use
       />
 
       {/* Panel */}
-      <div className={`fixed top-0 right-0 h-full w-full md:w-[400px] bg-white z-50 shadow-2xl transition-transform duration-300 transform ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+      <div className={`fixed top-0 right-0 h-full w-full md:w-[400px] bg-neutral z-50 shadow-2xl transition-transform duration-300 transform ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
         <div className="p-6 flex flex-col h-full overflow-y-auto">
           <div className="flex justify-between items-center mb-6">
             <div className="flex items-center gap-2">
               {currentView !== 'menu' && (
-                <button onClick={() => setCurrentView('menu')} className="p-1 hover:bg-gray-100 rounded-full text-gray-600">
+                <button onClick={() => setCurrentView('menu')} className="p-1 hover:bg-gray-bg rounded-full text-gray-light">
                   <ChevronLeft size={24} />
                 </button>
               )}
               <h2 className="font-heading font-bold text-xl text-secondary">{getTitle()}</h2>
             </div>
-            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full text-gray-500">
+            <button onClick={onClose} className="p-2 hover:bg-gray-bg rounded-full text-gray-light">
               <X size={24} />
             </button>
           </div>

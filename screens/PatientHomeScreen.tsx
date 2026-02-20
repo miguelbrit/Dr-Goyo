@@ -90,9 +90,9 @@ export const PatientHomeScreen: React.FC<PatientHomeScreenProps> = ({
     <div className="min-h-screen bg-gray-bg pb-24">
       
       {/* Header */}
-      <header className="bg-white px-6 pt-6 pb-4 rounded-b-3xl shadow-soft sticky top-0 z-30">
+      <header className="bg-card px-6 pt-6 pb-4 rounded-b-3xl shadow-soft sticky top-0 z-30">
         <div className="flex justify-between items-center mb-2">
-          <h1 className="font-heading text-lg text-gray-700 truncate max-w-[70%]">
+          <h1 className="font-heading text-lg text-gray-text truncate max-w-[70%]">
             Hola, <span className="font-bold text-secondary">{userName}</span>
           </h1>
           <button onClick={() => setIsSidebarOpen(true)} className="flex-shrink-0">
@@ -104,7 +104,7 @@ export const PatientHomeScreen: React.FC<PatientHomeScreenProps> = ({
           </button>
         </div>
         
-        <div className="flex items-center gap-1.5 text-gray-500 text-sm font-medium">
+        <div className="flex items-center gap-1.5 text-gray-light text-sm font-medium">
           <MapPin size={15} className="text-primary" />
           <span>Caracas, Venezuela</span>
         </div>
@@ -114,11 +114,11 @@ export const PatientHomeScreen: React.FC<PatientHomeScreenProps> = ({
         
         {/* Chat Section */}
         <section>
-          <div className="bg-white rounded-2xl shadow-lg shadow-primary/5 p-2 border border-primary/10 flex items-center gap-2">
-             <div className="flex-1 bg-gray-50 rounded-xl px-4 py-2.5 flex items-center">
+          <div className="bg-card rounded-2xl shadow-lg shadow-primary/5 p-2 border border-border-main flex items-center gap-2">
+             <div className="flex-1 bg-gray-bg rounded-xl px-4 py-2.5 flex items-center">
                 <input 
                   type="text"
-                  className="w-full bg-transparent border-none focus:outline-none focus:ring-0 text-gray-700 placeholder:text-gray-400 text-sm"
+                  className="w-full bg-transparent border-none focus:outline-none focus:ring-0 text-text-main placeholder:text-gray-light text-sm"
                   placeholder="Escríbele a Dr. Goyo qué te ocurre..."
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
@@ -129,14 +129,14 @@ export const PatientHomeScreen: React.FC<PatientHomeScreenProps> = ({
              {message.length > 0 ? (
                 <button 
                   onClick={handleChatInputSubmit}
-                  className="p-2.5 bg-primary text-white rounded-xl shadow-lg shadow-primary/30 transition-all hover:scale-105 active:scale-95"
+                  className="p-2.5 bg-primary text-neutral rounded-xl shadow-lg shadow-primary/30 transition-all hover:scale-105 active:scale-95"
                 >
                    <Send size={18} />
                 </button>
              ) : (
                 <button 
                   onClick={() => onNavigateToChat()}
-                  className="p-2.5 bg-gray-100 text-gray-500 rounded-xl hover:bg-gray-200 transition-all active:scale-95"
+                  className="p-2.5 bg-gray-bg text-gray-light rounded-xl hover:bg-gray-bg/80 transition-all active:scale-95"
                 >
                    <Mic size={18} />
                 </button>
@@ -154,20 +154,20 @@ export const PatientHomeScreen: React.FC<PatientHomeScreenProps> = ({
 
         {/* "Te puede Interesar" Grid */}
         <section>
-          <h2 className="font-heading font-semibold text-gray-800 mb-3 text-lg">Te puede Interesar</h2>
+          <h2 className="font-heading font-semibold text-text-main mb-3 text-lg">Te puede Interesar</h2>
           <div className="grid grid-cols-1 gap-3">
             {interestItems.map((item) => (
               <button 
                 key={item.id}
                 onClick={item.action}
-                className="bg-white p-4 rounded-2xl shadow-soft flex items-center gap-4 hover:shadow-md transition-all active:scale-[0.98] group border border-transparent hover:border-gray-50 text-left"
+                className="bg-card p-4 rounded-2xl shadow-soft flex items-center gap-4 hover:shadow-md transition-all active:scale-[0.98] group border border-transparent hover:border-border-main text-left"
               >
                 <div className={`w-14 h-14 rounded-full flex items-center justify-center ${item.color} group-hover:scale-110 transition-transform flex-shrink-0`}>
                   <item.icon size={26} />
                 </div>
                 <div>
-                   <h3 className="font-bold text-gray-800 text-base group-hover:text-primary transition-colors">{item.label}</h3>
-                   <p className="text-xs text-gray-500 mt-0.5">Accede a información verificada</p>
+                   <h3 className="font-bold text-text-main text-base group-hover:text-primary transition-colors">{item.label}</h3>
+                   <p className="text-xs text-gray-light mt-0.5">Accede a información verificada</p>
                 </div>
               </button>
             ))}
