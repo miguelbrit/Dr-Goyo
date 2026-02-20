@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import prisma from '../utils/prisma';
-import { AuthRequest } from '../middleware/auth';
+import prisma from '../utils/prisma.js';
+import { AuthRequest } from '../middleware/auth.js';
 import { UserType } from '@prisma/client';
 
 export const createArticle = async (req: AuthRequest, res: Response) => {
@@ -15,9 +15,9 @@ export const createArticle = async (req: AuthRequest, res: Response) => {
         authorId: req.user?.id!,
       },
     });
-    res.status(201).json(article);
+    res.status(201).json({ success: true, data: article });
   } catch (error) {
-    res.status(400).json({ error: 'Error al crear artículo' });
+    res.status(400).json({ success: false, error: 'Error al crear artículo' });
   }
 };
 
@@ -28,9 +28,9 @@ export const listArticlesByType = async (req: Request, res: Response) => {
       where: type ? { type: type as UserType } : {},
       include: { author: { select: { name: true } } },
     });
-    res.json(articles);
+    res.json({ success: true, data: articles });
   } catch (error) {
-    res.status(500).json({ error: 'Error al listar artículos' });
+    res.status(500).json({ success: false, error: 'Error al listar artículos' });
   }
 };
 
@@ -40,8 +40,8 @@ export const detailArticle = async (req: Request, res: Response) => {
       where: { id: req.params.id as string },
       include: { author: { select: { name: true } } },
     });
-    res.json(article);
+    res.json({ success: true, data: article });
   } catch (error) {
-    res.status(500).json({ error: 'Error al obtener detalle del artículo' });
+    res.status(500).json({ success: false, error: 'Error al obtener detalle del artículo' });
   }
 };

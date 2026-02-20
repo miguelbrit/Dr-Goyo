@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import prisma from '../utils/prisma';
-import { AuthRequest } from '../middleware/auth';
+import prisma from '../utils/prisma.js';
+import { AuthRequest } from '../middleware/auth.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'secret_goyo';
 
@@ -25,9 +25,18 @@ export const register = async (req: Request, res: Response) => {
     if (type === 'Farmacia') await prisma.pharmacy.create({ data: { userId: user.id } });
     if (type === 'Laboratorio') await prisma.laboratory.create({ data: { userId: user.id } });
 
-    res.status(201).json({ message: 'Usuario registrado exitosamente', userId: user.id });
+    res.status(201).json({ 
+      success: true, 
+      message: 'Usuario registrado exitosamente', 
+      data: { userId: user.id } 
+    });
   } catch (error) {
-    res.status(400).json({ error: 'Error al registrar usuario' });
+    console.error('Registration Error:', error);
+    res.status(400).json({ 
+      success: false, 
+      error: 'Error al registrar usuario',
+      message: error instanceof Error ? error.message : 'Error desconocido'
+    });
   }
 };
 
@@ -41,9 +50,18 @@ export const login = async (req: Request, res: Response) => {
     }
 
     const token = jwt.sign({ id: user.id, type: user.type }, JWT_SECRET, { expiresIn: '24h' });
-    res.json({ token, user: { id: user.id, name: user.name, type: user.type } });
+    res.json({ 
+      success: true, 
+      token, 
+      user: { id: user.id, name: user.name, type: user.type } 
+    });
   } catch (error) {
-    res.status(500).json({ error: 'Error en el servidor' });
+    console.error('Login Error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Error en el servidor',
+      message: 'Hubo un problema al procesar tu inicio de sesión'
+    });
   }
 };
 
@@ -57,8 +75,15 @@ export const getProfile = async (req: AuthRequest, res: Response) => {
         laboratory: true,
       },
     });
-    res.json(user);
+    res.json({
+      success: true,
+      data: user
+    });
   } catch (error) {
-    res.status(500).json({ error: 'Error al obtener perfil' });
+    console.error('Profile Error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Error al obtener perfil' 
+    });
   }
 };

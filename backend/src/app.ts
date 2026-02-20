@@ -1,9 +1,9 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
-import userRoutes from './routes/userRoutes';
-import entityRoutes from './routes/entityRoutes';
-import articleRoutes from './routes/articleRoutes';
+import userRoutes from './routes/userRoutes.js';
+import entityRoutes from './routes/entityRoutes.js';
+import articleRoutes from './routes/articleRoutes.js';
 
 dotenv.config();
 

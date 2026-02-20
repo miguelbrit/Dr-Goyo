@@ -3,7 +3,7 @@ import {
   listDoctors, detailDoctor, 
   listPharmacies, detailPharmacy, 
   listLaboratories, detailLaboratory 
-} from '../controllers/entityController';
+} from '../controllers/entityController.js';
 
 const router = Router();
 

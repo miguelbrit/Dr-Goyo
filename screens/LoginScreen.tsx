@@ -15,17 +15,38 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onBack, onLoginSuccess
   const [step, setStep] = useState<'role' | 'login'>('role');
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
   const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedRole) return;
     
     setLoading(true);
-    // Simulate API call
-    setTimeout(() => {
+    setError(null);
+
+    try {
+      const response = await fetch('/api/users/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || result.message || 'Error al iniciar sesión');
+      }
+
+      // Success: result.token contains the JWT
+      localStorage.setItem('token', result.token);
       setLoading(false);
       onLoginSuccess(selectedRole);
-    }, 1500);
+    } catch (err: any) {
+      setLoading(false);
+      setError(err.message);
+    }
   };
 
   const handleBack = () => {
@@ -50,6 +71,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onBack, onLoginSuccess
         />
       ) : (
         <div className="animate-in fade-in slide-in-from-right-4 duration-500">
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-100 text-red-600 text-sm rounded-xl text-center">
+              {error}
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="space-y-6">
             <Input 
               label="Correo Electrónico" 
@@ -57,6 +83,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onBack, onLoginSuccess
               placeholder="ejemplo@correo.com" 
               icon={<Mail size={18} />}
               required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
             />
             
             <div className="space-y-2">
@@ -66,6 +94,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onBack, onLoginSuccess
                 placeholder="••••••••" 
                 icon={<Lock size={18} />}
                 required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
               />
               <div className="flex justify-end">
                 <button 
