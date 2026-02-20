@@ -54,7 +54,7 @@ const UIKitShowcase = ({ onBack }: { onBack: () => void }) => (
         <div className="grid md:grid-cols-2 gap-8">
            <Banner title="Bienvenido Paciente" subtitle="Tienes una cita próxima mañana a las 9:00 AM" type="premium" />
            <div className="bg-white p-6 rounded-2xl shadow-soft">
-              <h3 className="font-heading font-semibold mb-4">Buscar Especialista</h3>
+              <h3 className="font-heading font-semibold mb-4 ">Buscar Especialista</h3>
               <SearchBar />
            </div>
         </div>

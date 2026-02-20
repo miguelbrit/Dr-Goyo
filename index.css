@@ -1,15 +1,6 @@
 @import "tailwindcss";
 
 @theme {
-<<<<<<< HEAD
-  --color-primary: #1FAF8B;
-  --color-secondary: #1E3A8A;
-  --color-accent: #D1FAE5;
-  --color-neutral: #FFFFFF;
-  --color-gray-bg: #F3F4F6;
-  --color-gray-text: #374151;
-  --color-gray-light: #9CA3AF;
-=======
   --color-primary: #1faf8b;
   --color-secondary: #1e3a8a;
   --color-accent: #d1fae5;
@@ -17,15 +8,13 @@
   --color-gray-bg: #f3f4f6;
   --color-gray-text: #374151;
   --color-gray-light: #9ca3af;
->>>>>>> ed3d2fa (Mi primera actualización desde la laptop)
 
   --font-sans: Inter, sans-serif;
   --font-heading: Poppins, sans-serif;
 
   --shadow-soft: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
 }
-<<<<<<< HEAD
-=======
+
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -41,7 +30,6 @@
     opacity: 0;
   }
   to {
-    transform: translateY(0);
     opacity: 1;
   }
 }
@@ -52,7 +40,6 @@
     opacity: 0;
   }
   to {
-    transform: translateX(0);
     opacity: 1;
   }
 }
@@ -73,4 +60,3 @@
 .slide-in-from-right-4 {
   animation-name: slideInRight;
 }
->>>>>>> ed3d2fa (Mi primera actualización desde la laptop)

@@ -76,7 +76,7 @@ const SUGGESTED_ARTICLES_DB: Article[] = [
     status: 'published',
     publishDate: '2024-05-05',
     views: 90,
-    image: 'https://images.unsplash.com/photo-1512069772995-ec65ed45afd0?auto=format&fit=crop&q=80&w=300'
+    image: '/imagenes/vitaminas.jpg'
   },
   // Lab Context
   {

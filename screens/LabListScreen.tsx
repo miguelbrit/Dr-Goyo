@@ -39,7 +39,7 @@ export const LABS_DATA: Laboratory[] = [
     rating: 4.8,
     reviews: 210,
     distance: '4.1 km',
-    image: 'https://images.unsplash.com/photo-1581093588401-fbb62a02f120?auto=format&fit=crop&q=80&w=400',
+    image: '/imagenes/laboratorio_zulia.jpg',
     services: [SERVICES[0], SERVICES[1], SERVICES[4]],
     hours: '6:30 AM - 6:00 PM',
     phone: '0261-999-2222'
@@ -79,7 +79,7 @@ export const LABS_DATA: Laboratory[] = [
     rating: 4.5,
     reviews: 110,
     distance: '1.0 km',
-    image: 'https://images.unsplash.com/photo-1516549655169-df83a25a836b?auto=format&fit=crop&q=80&w=400',
+    image: '/imagenes/laboratorio1.jpg',
     services: [SERVICES[0], SERVICES[2]],
     hours: '8:00 AM - 5:00 PM',
     phone: '0293-999-5555'
