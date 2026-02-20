@@ -7,6 +7,25 @@ import { Avatar } from '../components/Avatar';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 
+interface StatItem {
+  label: string;
+  value: string;
+  icon: any;
+  color: string;
+}
+
+const StatCard: React.FC<{ item: StatItem }> = ({ item }) => (
+  <div className="bg-white p-6 rounded-2xl shadow-soft border border-gray-100 flex items-center gap-4">
+    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${item.color}`}>
+      <item.icon size={24} />
+    </div>
+    <div>
+      <p className="text-gray-500 text-sm font-medium">{item.label}</p>
+      <h3 className="text-2xl font-heading font-bold text-gray-900">{item.value}</h3>
+    </div>
+  </div>
+);
+
 interface PharmacyDashboardProps {
   onLogout: () => void;
   pharmacyName?: string;
@@ -66,17 +85,6 @@ export const PharmacyDashboardScreen: React.FC<PharmacyDashboardProps> = ({ onLo
     </button>
   );
 
-  const StatCard = ({ item }: { item: typeof stats[0] }) => (
-    <div className="bg-white p-6 rounded-2xl shadow-soft border border-gray-100 flex items-center gap-4">
-      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${item.color}`}>
-        <item.icon size={24} />
-      </div>
-      <div>
-        <p className="text-gray-500 text-sm font-medium">{item.label}</p>
-        <h3 className="text-2xl font-heading font-bold text-gray-900">{item.value}</h3>
-      </div>
-    </div>
-  );
 
   // --- Main Render ---
 
@@ -169,7 +177,7 @@ export const PharmacyDashboardScreen: React.FC<PharmacyDashboardProps> = ({ onLo
             </button>
             
             <div className="flex items-center gap-3 border-l border-gray-200 pl-6">
-              <Avatar src="https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&q=80&w=200" alt="Farmacia" size="md" />
+              <Avatar src="https://images.unsplash.com/photo-1587854692152-cbe660dbde88?auto=format&fit=crop&q=80&w=200" alt="Farmacia" size="md" />
             </div>
           </div>
         </header>

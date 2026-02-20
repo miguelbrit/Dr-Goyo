@@ -27,7 +27,7 @@ export const PHARMACY_DATA: Pharmacy[] = [
     rating: 4.5,
     reviews: 320,
     isOpen: true,
-    image: 'https://images.unsplash.com/photo-1585435557343-3b092031a831?auto=format&fit=crop&q=80&w=400',
+    image: 'https://images.unsplash.com/photo-1576602976047-174e57a47881?auto=format&fit=crop&q=80&w=400',
     inventory: [...COMMON_MEDS],
     hours: '24 Horas',
     phone: '0212-555-001'
@@ -41,7 +41,7 @@ export const PHARMACY_DATA: Pharmacy[] = [
     rating: 4.7,
     reviews: 150,
     isOpen: true,
-    image: 'https://images.unsplash.com/photo-1631549916768-4119b2e5f926?auto=format&fit=crop&q=80&w=400',
+    image: 'https://images.unsplash.com/photo-1587854692152-cbe660dbde88?auto=format&fit=crop&q=80&w=400',
     inventory: [COMMON_MEDS[0], COMMON_MEDS[2], COMMON_MEDS[4]],
     hours: '8:00 AM - 10:00 PM',
     phone: '0261-555-002'
@@ -55,7 +55,7 @@ export const PHARMACY_DATA: Pharmacy[] = [
     rating: 4.3,
     reviews: 89,
     isOpen: false,
-    image: 'https://images.unsplash.com/photo-1576602976047-174e57a47881?auto=format&fit=crop&q=80&w=400',
+    image: 'https://images.unsplash.com/photo-1631549916768-4119b2e5f926?auto=format&fit=crop&q=80&w=400',
     inventory: [COMMON_MEDS[1], COMMON_MEDS[3]],
     hours: '8:00 AM - 8:00 PM',
     phone: '0285-555-003'
@@ -69,7 +69,7 @@ export const PHARMACY_DATA: Pharmacy[] = [
     rating: 4.9,
     reviews: 410,
     isOpen: true,
-    image: 'https://images.unsplash.com/photo-1586015555751-63bb77f4322a?auto=format&fit=crop&q=80&w=400',
+    image: 'https://images.unsplash.com/photo-1585435557343-3b092031a831?auto=format&fit=crop&q=80&w=400',
     inventory: [...COMMON_MEDS],
     hours: '24 Horas',
     phone: '0251-555-004'
@@ -84,7 +84,7 @@ export const PHARMACY_DATA: Pharmacy[] = [
     rating: 4.6,
     reviews: 120,
     isOpen: true,
-    image: 'https://images.unsplash.com/photo-1587854692152-cbe660dbde88?auto=format&fit=crop&q=80&w=400',
+    image: 'https://images.unsplash.com/photo-1471864190281-a93a3070b6de?auto=format&fit=crop&q=80&w=400',
     inventory: [...COMMON_MEDS],
     hours: '8:00 AM - 10:00 PM',
     phone: '0274-555-005'

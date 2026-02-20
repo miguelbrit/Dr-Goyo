@@ -79,7 +79,7 @@ export const LABS_DATA: Laboratory[] = [
     rating: 4.5,
     reviews: 110,
     distance: '1.0 km',
-    image: 'https://images.unsplash.com/photo-1631549916768-4119b2e5f926?auto=format&fit=crop&q=80&w=400',
+    image: 'https://images.unsplash.com/photo-1516549655169-df83a25a836b?auto=format&fit=crop&q=80&w=400',
     services: [SERVICES[0], SERVICES[2]],
     hours: '8:00 AM - 5:00 PM',
     phone: '0293-999-5555'
@@ -90,13 +90,13 @@ export const LABS_DATA: Laboratory[] = [
 const LAB_BANNERS: CarouselItem[] = [
   {
     id: 'l1',
-    image: 'https://images.unsplash.com/photo-1579154204601-01588f351e67?auto=format&fit=crop&q=80&w=800',
+    image: 'https://images.unsplash.com/photo-1576086213369-97a306d36557?auto=format&fit=crop&q=80&w=800',
     title: 'Chequeo Anual',
     subtitle: 'Paquete de perfil 20 con 15% de descuento este mes.'
   },
   {
     id: 'l2',
-    image: 'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?auto=format&fit=crop&q=80&w=800',
+    image: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&q=80&w=800',
     title: 'Resultados Express',
     subtitle: 'Obtén tus análisis de laboratorio en menos de 24 horas.'
   }
