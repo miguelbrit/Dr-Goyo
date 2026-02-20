@@ -28,12 +28,12 @@ const StatCard: React.FC<{ item: StatItem }> = ({ item }) => (
 
 interface PharmacyDashboardProps {
   onLogout: () => void;
-  pharmacyName?: string;
+  userName?: string;
 }
 
 type DashboardView = 'overview' | 'inventory' | 'orders' | 'chat' | 'stats' | 'settings';
 
-export const PharmacyDashboardScreen: React.FC<PharmacyDashboardProps> = ({ onLogout, pharmacyName = "Farmacia Central" }) => {
+export const PharmacyDashboardScreen: React.FC<PharmacyDashboardProps> = ({ onLogout, userName = "Farmacia" }) => {
   const [currentView, setCurrentView] = useState<DashboardView>('overview');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isOpen, setIsOpen] = useState(true);
@@ -147,7 +147,7 @@ export const PharmacyDashboardScreen: React.FC<PharmacyDashboardProps> = ({ onLo
             </button>
             
             <div className="hidden md:block">
-               <h2 className="text-xl font-heading font-bold text-gray-800">{pharmacyName}</h2>
+               <h2 className="text-xl font-heading font-bold text-gray-800">{userName}</h2>
                <div className="flex items-center gap-1 text-xs text-gray-500">
                   <MapPin size={12} />
                   <span>Av. Urdaneta, Caracas</span>

@@ -7,28 +7,63 @@ import { AuthRequest } from '../middleware/auth.js';
 const JWT_SECRET = process.env.JWT_SECRET || 'secret_goyo';
 
 export const register = async (req: Request, res: Response) => {
-  const { name, email, password, type } = req.body;
+  const { name, email, password, type, specialty, license, address, testTypes } = req.body;
 
   try {
+    const normalizedEmail = email.toLowerCase().trim();
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = await prisma.user.create({
       data: {
         name,
-        email,
+        email: normalizedEmail,
         passwordHash: hashedPassword,
         type,
       },
     });
 
-    // Create profile if necessary
-    if (type === 'Medico') await prisma.doctor.create({ data: { userId: user.id } });
-    if (type === 'Farmacia') await prisma.pharmacy.create({ data: { userId: user.id } });
-    if (type === 'Laboratorio') await prisma.laboratory.create({ data: { userId: user.id } });
+    // Create profile if necessary with specialized data
+    if (type === 'Medico') {
+      await prisma.doctor.create({ 
+        data: { 
+          userId: user.id,
+          name: name,
+          specialty,
+          license
+        } 
+      });
+    }
+    if (type === 'Farmacia') {
+      await prisma.pharmacy.create({ 
+        data: { 
+          userId: user.id,
+          name: name,
+          address
+        } 
+      });
+    }
+    if (type === 'Laboratorio') {
+      await prisma.laboratory.create({ 
+        data: { 
+          userId: user.id,
+          name: name,
+          address,
+          testTypes
+        } 
+      });
+    }
+
+    const token = jwt.sign({ id: user.id, type: user.type }, JWT_SECRET, { expiresIn: '24h' });
 
     res.status(201).json({ 
       success: true, 
       message: 'Usuario registrado exitosamente', 
-      data: { userId: user.id } 
+      token,
+      user: { 
+        id: user.id, 
+        name: user.name, 
+        type: user.type,
+        role: type === 'Medico' ? 'doctor' : type === 'Farmacia' ? 'pharmacy' : type === 'Laboratorio' ? 'lab' : 'patient'
+      } 
     });
   } catch (error) {
     console.error('Registration Error:', error);
@@ -44,16 +79,47 @@ export const login = async (req: Request, res: Response) => {
   const { email, password } = req.body;
 
   try {
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
-      return res.status(401).json({ error: 'Credenciales inválidas' });
+    const normalizedEmail = email.toLowerCase().trim();
+    const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+    
+    if (!user) {
+      console.log(`Login attempt failed: User not found for email ${normalizedEmail}`);
+      return res.status(401).json({ 
+        success: false, 
+        error: 'Credenciales inválidas', 
+        message: 'El correo electrónico no está registrado' 
+      });
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
+    if (!isPasswordValid) {
+      console.log(`Login attempt failed: Password mismatch for ${normalizedEmail}`);
+      return res.status(401).json({ 
+        success: false, 
+        error: 'Credenciales inválidas', 
+        message: 'La contraseña es incorrecta' 
+      });
     }
 
     const token = jwt.sign({ id: user.id, type: user.type }, JWT_SECRET, { expiresIn: '24h' });
+    
+    // Convert DB type to frontend role format
+    const roleMapping: Record<string, string> = {
+      'Paciente': 'patient',
+      'Medico': 'doctor',
+      'Farmacia': 'pharmacy',
+      'Laboratorio': 'lab'
+    };
+
     res.json({ 
       success: true, 
       token, 
-      user: { id: user.id, name: user.name, type: user.type } 
+      user: { 
+        id: user.id, 
+        name: user.name, 
+        type: user.type,
+        role: roleMapping[user.type] || 'patient'
+      } 
     });
   } catch (error) {
     console.error('Login Error:', error);

@@ -7,7 +7,7 @@ import { RoleSelector, UserRole } from '../components/RoleSelector';
 
 interface LoginScreenProps {
   onBack: () => void;
-  onLoginSuccess: (role: UserRole) => void;
+  onLoginSuccess: (role: UserRole, userName: string) => void;
   onForgotPassword?: () => void;
 }
 
@@ -42,7 +42,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onBack, onLoginSuccess
       // Success: result.token contains the JWT
       localStorage.setItem('token', result.token);
       setLoading(false);
-      onLoginSuccess(selectedRole);
+      onLoginSuccess(result.user.role || selectedRole, result.user.name || 'Usuario');
     } catch (err: any) {
       setLoading(false);
       setError(err.message);

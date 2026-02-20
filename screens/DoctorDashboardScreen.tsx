@@ -13,7 +13,7 @@ interface DoctorDashboardProps {
 
 type DashboardView = 'overview' | 'appointments' | 'patients' | 'calendar' | 'chat' | 'earnings' | 'settings';
 
-export const DoctorDashboardScreen: React.FC<DoctorDashboardProps> = ({ onLogout, userName = "Dr. Alejandro" }) => {
+export const DoctorDashboardScreen: React.FC<DoctorDashboardProps> = ({ onLogout, userName = "Doctor" }) => {
   const [currentView, setCurrentView] = useState<DashboardView>('overview');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isAvailable, setIsAvailable] = useState(true);

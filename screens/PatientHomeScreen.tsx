@@ -16,7 +16,7 @@ interface PatientHomeScreenProps {
 }
 
 export const PatientHomeScreen: React.FC<PatientHomeScreenProps> = ({ 
-  userName = "Alejandro", 
+  userName = "Usuario", 
   onLogout, 
   onNavigateToChat,
   onNavigateToMedicines,

@@ -34,6 +34,9 @@ model Doctor {
   id          String   @id @default(uuid())
   user        User     @relation(fields: [userId], references: [id])
   userId      String   @unique
+  name        String?
+  specialty   String?
+  license     String?
   description String?
   address     String?
   imageUrl    String?
@@ -43,8 +46,9 @@ model Pharmacy {
   id          String   @id @default(uuid())
   user        User     @relation(fields: [userId], references: [id])
   userId      String   @unique
-  description String?
+  name        String?
   address     String?
+  description String?
   imageUrl    String?
 }
 
@@ -52,8 +56,10 @@ model Laboratory {
   id          String   @id @default(uuid())
   user        User     @relation(fields: [userId], references: [id])
   userId      String   @unique
-  description String?
+  name        String?
+  testTypes   String?
   address     String?
+  description String?
   imageUrl    String?
 }
 

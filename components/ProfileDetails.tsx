@@ -3,7 +3,7 @@ import { User, Phone, Mail, Calendar, Ruler, Weight } from 'lucide-react';
 import { Input } from './Input';
 import { Button } from './Button';
 
-export const ProfileDetails: React.FC = () => {
+export const ProfileDetails: React.FC<{ userName?: string }> = ({ userName = "Usuario" }) => {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4 mb-2">
@@ -18,7 +18,7 @@ export const ProfileDetails: React.FC = () => {
       
       <form className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
-          <Input label="Nombre" defaultValue="Alejandro" icon={<User size={18} />} />
+          <Input label="Nombre" defaultValue={userName} icon={<User size={18} />} />
           <Input label="Apellido" defaultValue="Goyo" />
         </div>
         

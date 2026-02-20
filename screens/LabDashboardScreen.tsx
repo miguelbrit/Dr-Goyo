@@ -27,12 +27,12 @@ const StatCard: React.FC<{ item: StatItem }> = ({ item }) => (
 
 interface LabDashboardProps {
   onLogout: () => void;
-  labName?: string;
+  userName?: string;
 }
 
 type DashboardView = 'overview' | 'services' | 'appointments' | 'results' | 'chat' | 'stats' | 'settings';
 
-export const LabDashboardScreen: React.FC<LabDashboardProps> = ({ onLogout, labName = "LabCare Diagnósticos" }) => {
+export const LabDashboardScreen: React.FC<LabDashboardProps> = ({ onLogout, userName = "Laboratorio" }) => {
   const [currentView, setCurrentView] = useState<DashboardView>('overview');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isOpen, setIsOpen] = useState(true);
@@ -146,7 +146,7 @@ export const LabDashboardScreen: React.FC<LabDashboardProps> = ({ onLogout, labN
             </button>
             
             <div className="hidden md:block">
-               <h2 className="text-xl font-heading font-bold text-gray-800">{labName}</h2>
+               <h2 className="text-xl font-heading font-bold text-gray-800">{userName}</h2>
                <div className="flex items-center gap-2 text-xs text-gray-500">
                   <span className="flex items-center gap-1"><AlertCircle size={10} className="text-yellow-500"/> Ranking 4.8/5.0</span>
                   <span>•</span>

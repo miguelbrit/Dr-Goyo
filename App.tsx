@@ -88,6 +88,7 @@ type ScreenState = 'splash' | 'welcome' | 'login' | 'role_select' | 'register' |
 const App: React.FC = () => {
   const [currentScreen, setCurrentScreen] = useState<ScreenState>('splash');
   const [selectedRole, setSelectedRole] = useState<'patient' | 'doctor' | 'pharmacy' | 'lab' | 'admin'>('patient');
+  const [userName, setUserName] = useState<string>('');
   
   // Track authenticated user role (Public App)
   const [userRole, setUserRole] = useState<string | null>(null);
@@ -137,8 +138,9 @@ const App: React.FC = () => {
   };
 
   // --- Public App Auth ---
-  const handleLoginSuccess = (role: string) => {
+  const handleLoginSuccess = (role: string, name: string) => {
      setUserRole(role);
+     setUserName(name);
      
      if (role === 'doctor') {
        setCurrentScreen('doctor_dashboard');
@@ -151,7 +153,8 @@ const App: React.FC = () => {
      }
   };
 
-  const handleRegisterSuccess = (role: string) => {
+  const handleRegisterSuccess = (role: string, name: string) => {
+    setUserName(name);
     if (role === 'doctor') {
       setUserRole('doctor');
       setCurrentScreen('doctor_dashboard');
@@ -281,7 +284,7 @@ const App: React.FC = () => {
           />
         );
       case 'login':
-        return <LoginScreen onBack={goBack} onLoginSuccess={(role) => handleLoginSuccess(role)} />;
+        return <LoginScreen onBack={goBack} onLoginSuccess={(role, name) => handleLoginSuccess(role, name)} />;
       case 'role_select':
         return (
           <RoleSelectionScreen 
@@ -300,7 +303,7 @@ const App: React.FC = () => {
           <RegisterScreen 
             role={selectedRole} 
             onBack={goBack} 
-            onSubmit={handleRegisterSuccess} 
+            onSubmit={(role, name) => handleRegisterSuccess(role, name)} 
           />
         );
       case 'review':
@@ -315,6 +318,7 @@ const App: React.FC = () => {
             onRedirect={() => setCurrentScreen('login')}
           >
             <PatientHomeScreen 
+              userName={userName}
               onLogout={handleLogout} 
               onNavigateToChat={handleNavigateToChat} 
               onNavigateToMedicines={handleNavigateToMedicineLibrary}
@@ -333,7 +337,7 @@ const App: React.FC = () => {
             currentRole={userRole || ''} 
             onRedirect={() => setCurrentScreen('login')}
           >
-            <DoctorDashboardScreen onLogout={handleLogout} />
+            <DoctorDashboardScreen onLogout={handleLogout} userName={userName} />
           </ProtectedRoute>
         );
 
@@ -344,7 +348,7 @@ const App: React.FC = () => {
             currentRole={userRole || ''} 
             onRedirect={() => setCurrentScreen('login')}
           >
-            <PharmacyDashboardScreen onLogout={handleLogout} />
+            <PharmacyDashboardScreen onLogout={handleLogout} userName={userName} />
           </ProtectedRoute>
         );
 
@@ -355,7 +359,7 @@ const App: React.FC = () => {
             currentRole={userRole || ''} 
             onRedirect={() => setCurrentScreen('login')}
           >
-            <LabDashboardScreen onLogout={handleLogout} />
+            <LabDashboardScreen onLogout={handleLogout} userName={userName} />
           </ProtectedRoute>
         );
       

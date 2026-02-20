@@ -9,7 +9,7 @@ type UserRole = 'patient' | 'doctor' | 'pharmacy' | 'lab' | 'admin';
 interface RegisterScreenProps {
   role: UserRole;
   onBack: () => void;
-  onSubmit: (role: UserRole) => void;
+  onSubmit: (role: UserRole, userName: string) => void;
 }
 
 export const RegisterScreen: React.FC<RegisterScreenProps> = ({ role, onBack, onSubmit }) => {
@@ -21,6 +21,12 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ role, onBack, on
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  
+  // Specialized Fields State
+  const [specialty, setSpecialty] = useState('');
+  const [license, setLicense] = useState('');
+  const [address, setAddress] = useState('');
+  const [testTypes, setTestTypes] = useState('');
 
   const getRoleConfig = () => {
     switch (role) {
@@ -56,10 +62,16 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ role, onBack, on
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          name: name || (role === 'pharmacy' || role === 'lab' ? 'Negocio' : 'Usuario'), // Fallback if name is empty
+          name: name || (role === 'pharmacy' || role === 'lab' ? 'Negocio' : 'Usuario'),
           email,
           password,
-          type: backendRole
+          type: backendRole,
+          phone,
+          // New specialized fields
+          specialty: role === 'doctor' ? specialty : undefined,
+          license: role === 'doctor' ? license : undefined,
+          address: (role === 'pharmacy' || role === 'lab') ? address : undefined,
+          testTypes: role === 'lab' ? testTypes : undefined,
         }),
       });
 
@@ -70,8 +82,9 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ role, onBack, on
       }
 
       // Success
+      localStorage.setItem('token', data.token);
       setLoading(false);
-      onSubmit(role);
+      onSubmit(data.user.role || role, name || data.user.name || 'Usuario');
     } catch (err: any) {
       setLoading(false);
       setError(err.message);
@@ -149,12 +162,16 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ role, onBack, on
               placeholder="Ej. Cardiología" 
               icon={<Briefcase size={18} />} 
               required 
+              value={specialty}
+              onChange={(e) => setSpecialty(e.target.value)}
             />
             <Input 
               label="Cédula" 
               placeholder="Número" 
               icon={<FileText size={18} />} 
               required 
+              value={license}
+              onChange={(e) => setLicense(e.target.value)}
             />
           </div>
         )}
@@ -175,6 +192,8 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ role, onBack, on
               placeholder="Calle, Número, Colonia..." 
               icon={<MapPin size={18} />} 
               required 
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
             />
           </>
         )}
@@ -188,6 +207,8 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ role, onBack, on
             <input 
               className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-text focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-sans"
               placeholder="Sangre, Orina, Rayos X..."
+              value={testTypes}
+              onChange={(e) => setTestTypes(e.target.value)}
             />
           </div>
         )}
