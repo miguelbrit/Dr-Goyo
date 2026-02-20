@@ -1,0 +1,68 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserType {
+  Paciente
+  Medico
+  Farmacia
+  Laboratorio
+}
+
+model User {
+  id            String    @id @default(uuid())
+  name          String
+  email         String    @unique
+  passwordHash  String
+  type          UserType  @default(Paciente)
+  createdAt     DateTime  @default(now())
+
+  // Profiles
+  doctor        Doctor?
+  pharmacy      Pharmacy?
+  laboratory    Laboratory?
+  
+  // Articles
+  articles      Article[]
+}
+
+model Doctor {
+  id          String   @id @default(uuid())
+  user        User     @relation(fields: [userId], references: [id])
+  userId      String   @unique
+  description String?
+  address     String?
+  imageUrl    String?
+}
+
+model Pharmacy {
+  id          String   @id @default(uuid())
+  user        User     @relation(fields: [userId], references: [id])
+  userId      String   @unique
+  description String?
+  address     String?
+  imageUrl    String?
+}
+
+model Laboratory {
+  id          String   @id @default(uuid())
+  user        User     @relation(fields: [userId], references: [id])
+  userId      String   @unique
+  description String?
+  address     String?
+  imageUrl    String?
+}
+
+model Article {
+  id          String   @id @default(uuid())
+  title       String
+  content     String
+  type        UserType // Medico, Farmacia, Laboratorio
+  author      User     @relation(fields: [authorId], references: [id])
+  authorId    String
+  publishDate DateTime @default(now())
+}

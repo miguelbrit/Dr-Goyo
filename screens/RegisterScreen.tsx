@@ -14,6 +14,13 @@ interface RegisterScreenProps {
 
 export const RegisterScreen: React.FC<RegisterScreenProps> = ({ role, onBack, onSubmit }) => {
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Form State
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
 
   const getRoleConfig = () => {
     switch (role) {
@@ -27,14 +34,48 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ role, onBack, on
 
   const config = getRoleConfig();
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    // Simulate API logic
-    setTimeout(() => {
+    setError(null);
+
+    // Map frontend roles to backend enum
+    const roleMapping: Record<string, string> = {
+      'patient': 'Paciente',
+      'doctor': 'Medico',
+      'pharmacy': 'Farmacia',
+      'lab': 'Laboratorio'
+    };
+
+    const backendRole = roleMapping[role] || 'Paciente';
+
+    try {
+      const response = await fetch('/api/users/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: name || (role === 'pharmacy' || role === 'lab' ? 'Negocio' : 'Usuario'), // Fallback if name is empty
+          email,
+          password,
+          type: backendRole
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Error al registrar usuario');
+      }
+
+      // Success
       setLoading(false);
       onSubmit(role);
-    }, 1500);
+    } catch (err: any) {
+      setLoading(false);
+      setError(err.message);
+    }
   };
 
   // Social Button classes for consistency
@@ -46,6 +87,12 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ role, onBack, on
       subtitle={config.subtitle}
       onBack={onBack}
     >
+      {error && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-100 text-red-600 text-sm rounded-xl text-center">
+          {error}
+        </div>
+      )}
+
       <form onSubmit={handleRegister} className="space-y-4">
         
         {/* Common Fields */}
@@ -55,6 +102,8 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ role, onBack, on
           placeholder="correo@ejemplo.com" 
           icon={<Mail size={18} />} 
           required 
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
         />
         <div className="grid grid-cols-2 gap-4">
           <Input 
@@ -63,6 +112,8 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ role, onBack, on
             placeholder="Min. 8 caracteres" 
             icon={<Lock size={18} />} 
             required 
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
           />
            <Input 
             label="Teléfono" 
@@ -70,13 +121,22 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ role, onBack, on
             placeholder="55 1234 5678" 
             icon={<Phone size={18} />} 
             required 
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
           />
         </div>
 
         {/* Patient, Doctor & Admin Fields */}
         {(role === 'patient' || role === 'doctor' || role === 'admin') && (
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Nombre" placeholder="Tu nombre" icon={<User size={18} />} required />
+            <Input 
+              label="Nombre" 
+              placeholder="Tu nombre" 
+              icon={<User size={18} />} 
+              required 
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
             <Input label="Apellido" placeholder="Tus apellidos" required />
           </div>
         )}
@@ -107,6 +167,8 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ role, onBack, on
               placeholder="Ej. Dr. Goyo Care" 
               icon={<Building size={18} />} 
               required 
+              value={name}
+              onChange={(e) => setName(e.target.value)}
             />
             <Input 
               label="Dirección Completa" 
@@ -124,7 +186,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ role, onBack, on
               Tipo de Exámenes
             </label>
             <input 
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-text focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-text focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-sans"
               placeholder="Sangre, Orina, Rayos X..."
             />
           </div>
