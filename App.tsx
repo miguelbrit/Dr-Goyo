@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SplashScreen } from './screens/SplashScreen';
 import { WelcomeScreen } from './screens/WelcomeScreen';
 import { LoginScreen } from './screens/LoginScreen';
@@ -27,6 +27,8 @@ import { ArticleDetailScreen } from './screens/ArticleDetailScreen';
 import { PreOpListScreen } from './screens/PreOpListScreen'; // New Import
 import { Toast } from './components/Toast';
 import { Doctor, Pharmacy, Laboratory, MedicineProfile, PathologyProfile, Article } from './types';
+import { ForgotPasswordScreen } from './screens/ForgotPasswordScreen';
+import { ResetPasswordScreen } from './screens/ResetPasswordScreen';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
 // Design System Showcase Component
@@ -83,12 +85,47 @@ const UIKitShowcase = ({ onBack }: { onBack: () => void }) => (
 );
 
 
-type ScreenState = 'splash' | 'welcome' | 'login' | 'role_select' | 'register' | 'review' | 'home' | 'doctor_dashboard' | 'pharmacy_dashboard' | 'lab_dashboard' | 'admin_login' | 'admin_dashboard' | 'chat' | 'doctors' | 'doctor_profile' | 'pharmacies' | 'pharmacy_profile' | 'labs' | 'lab_profile' | 'library_hub' | 'medicine_library' | 'medicine_detail' | 'pathology_library' | 'pathology_detail' | 'article_detail' | 'preop_list' | 'uikit';
+type ScreenState = 'splash' | 'welcome' | 'login' | 'forgot_password' | 'reset_password' | 'role_select' | 'register' | 'review' | 'home' | 'doctor_dashboard' | 'pharmacy_dashboard' | 'lab_dashboard' | 'admin_login' | 'admin_dashboard' | 'chat' | 'doctors' | 'doctor_profile' | 'pharmacies' | 'pharmacy_profile' | 'labs' | 'lab_profile' | 'library_hub' | 'medicine_library' | 'medicine_detail' | 'pathology_library' | 'pathology_detail' | 'article_detail' | 'preop_list' | 'uikit';
 
 const App: React.FC = () => {
   const [currentScreen, setCurrentScreen] = useState<ScreenState>('splash');
   const [selectedRole, setSelectedRole] = useState<'patient' | 'doctor' | 'pharmacy' | 'lab' | 'admin'>('patient');
+  
+  useEffect(() => {
+    // 1. Check for valid session
+    const token = localStorage.getItem('token');
+    const storedRole = localStorage.getItem('user_role');
+    const storedName = localStorage.getItem('user_name');
+
+    if (token) {
+      if (storedRole) {
+        setUserRole(storedRole);
+        setUserName(storedName || '');
+        // Set screen immediately
+        const screen = storedRole === 'patient' ? 'home' : `${storedRole}_dashboard` as ScreenState;
+        setCurrentScreen(screen);
+      }
+      fetchFullProfile();
+    }
+
+    // 2. Check for password recovery redirection (Supabase flow)
+    const hash = window.location.hash;
+    const path = window.location.pathname;
+    
+    if (hash.includes('type=recovery') || path === '/reset-password') {
+      const params = new URLSearchParams(hash.replace('#', '?'));
+      const accessToken = params.get('access_token');
+      if (accessToken) {
+        localStorage.setItem('token', accessToken);
+      }
+      setCurrentScreen('reset_password');
+      // Clean up the URL to prevent re-triggering
+      window.history.replaceState(null, '', '/');
+    }
+  }, []);
+  // ...
   const [userName, setUserName] = useState<string>('');
+  const [userProfile, setUserProfile] = useState<any>(null);
   
   // Track authenticated user role (Public App)
   const [userRole, setUserRole] = useState<string | null>(null);
@@ -119,7 +156,8 @@ const App: React.FC = () => {
     if (currentScreen === 'register') setCurrentScreen('role_select');
     else if (currentScreen === 'role_select') setCurrentScreen('welcome');
     else if (currentScreen === 'login') setCurrentScreen('welcome');
-    else if (currentScreen === 'admin_login') setCurrentScreen('welcome'); // Exit admin portal
+    else if (currentScreen === 'forgot_password') setCurrentScreen('login');
+    else if (currentScreen === 'admin_login') setCurrentScreen('welcome');
     else if (currentScreen === 'uikit') setCurrentScreen('welcome');
     else if (currentScreen === 'chat') setCurrentScreen('home');
     else if (currentScreen === 'doctors') setCurrentScreen('home');
@@ -129,51 +167,106 @@ const App: React.FC = () => {
     else if (currentScreen === 'labs') setCurrentScreen('home');
     else if (currentScreen === 'lab_profile') setCurrentScreen('labs');
     else if (currentScreen === 'library_hub') setCurrentScreen('home');
-    else if (currentScreen === 'medicine_library') setCurrentScreen('home'); // Now direct from Home
-    else if (currentScreen === 'pathology_library') setCurrentScreen('home'); // Now direct from Home
+    else if (currentScreen === 'medicine_library') setCurrentScreen('home');
+    else if (currentScreen === 'pathology_library') setCurrentScreen('home');
     else if (currentScreen === 'medicine_detail') setCurrentScreen('medicine_library');
     else if (currentScreen === 'pathology_detail') setCurrentScreen('pathology_library');
     else if (currentScreen === 'article_detail') setCurrentScreen('home');
     else if (currentScreen === 'preop_list') setCurrentScreen('home');
   };
 
-  // --- Public App Auth ---
-  const handleLoginSuccess = (role: string, name: string) => {
-     setUserRole(role);
-     setUserName(name);
-     
-     if (role === 'doctor') {
-       setCurrentScreen('doctor_dashboard');
-     } else if (role === 'pharmacy') {
-       setCurrentScreen('pharmacy_dashboard');
-     } else if (role === 'lab') {
-       setCurrentScreen('lab_dashboard');
-     } else {
-       setCurrentScreen('home'); // Patient
-     }
+  const fetchFullProfile = async () => {
+    try {
+      const response = await fetch('http://localhost:5001/api/users/profile', {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      });
+      
+      const text = await response.text();
+      try {
+        const result = JSON.parse(text);
+        if (result.success) {
+          setUserProfile(result.data);
+          const name = result.data.name || '';
+          const type = result.data.type;
+          
+          const roleMapping: Record<string, string> = {
+            'Paciente': 'patient',
+            'Medico': 'doctor',
+            'Farmacia': 'pharmacy',
+            'Laboratorio': 'lab'
+          };
+          
+          const role = roleMapping[type] || 'patient';
+          
+          setUserName(name);
+          setUserRole(role);
+          
+          // Persistence in Storage
+          localStorage.setItem('user_role', role);
+          localStorage.setItem('user_name', name);
+
+          // If we are still on splash or welcome, go to the right dashboard
+          if (currentScreen === 'splash' || currentScreen === 'welcome' || currentScreen === 'login') {
+            const screen = role === 'patient' ? 'home' : `${role}_dashboard` as ScreenState;
+            setCurrentScreen(screen);
+          }
+        } else {
+          // Token might be invalid or expired
+          handleLogout();
+        }
+      } catch (e) {
+        console.error('Error parsing profile JSON:', text);
+      }
+    } catch (err) {
+      console.error("Error fetching full profile:", err);
+    }
   };
 
-  const handleRegisterSuccess = (role: string, name: string) => {
+  // --- Public App Auth ---
+  const handleLoginSuccess = async (role: string, name: string) => {
+    setUserRole(role);
     setUserName(name);
+    
+    // Guardar para persistencia
+    localStorage.setItem('user_role', role);
+    localStorage.setItem('user_name', name);
+    
+    await fetchFullProfile();
+    
     if (role === 'doctor') {
-      setUserRole('doctor');
       setCurrentScreen('doctor_dashboard');
     } else if (role === 'pharmacy') {
-      setUserRole('pharmacy');
       setCurrentScreen('pharmacy_dashboard');
     } else if (role === 'lab') {
-      setUserRole('lab');
       setCurrentScreen('lab_dashboard');
-    } else if (role === 'patient') {
-      setUserRole('patient');
-      setCurrentScreen('home');
+    } else {
+      setCurrentScreen('home'); // Paciente
+    }
+  };
+
+  const handleRegisterSuccess = async (role: string, name: string) => {
+    setUserName(name);
+    setUserRole(role);
+    
+    // Persistencia
+    localStorage.setItem('user_role', role);
+    localStorage.setItem('user_name', name);
+    
+    await fetchFullProfile();
+    
+    if (role === 'doctor' || role === 'pharmacy' || role === 'lab' || role === 'patient') {
+      setCurrentScreen(role === 'patient' ? 'home' : `${role}_dashboard` as ScreenState);
     } else {
       setCurrentScreen('review'); 
     }
   };
 
   const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user_role');
+    localStorage.removeItem('user_name');
     setUserRole(null);
+    setUserProfile(null);
     setCurrentScreen('welcome');
     setToastMessage("Has cerrado sesión correctamente");
     setShowToast(true);
@@ -284,7 +377,26 @@ const App: React.FC = () => {
           />
         );
       case 'login':
-        return <LoginScreen onBack={goBack} onLoginSuccess={(role, name) => handleLoginSuccess(role, name)} />;
+        return (
+          <LoginScreen 
+            onBack={goBack} 
+            onLoginSuccess={(role, name) => handleLoginSuccess(role, name)} 
+            onForgotPassword={() => setCurrentScreen('forgot_password')}
+          />
+        );
+      case 'forgot_password':
+        return (
+          <ForgotPasswordScreen 
+            onBack={goBack} 
+            onSuccess={() => setCurrentScreen('login')} 
+          />
+        );
+      case 'reset_password':
+        return (
+          <ResetPasswordScreen 
+            onSuccess={() => setCurrentScreen('login')} 
+          />
+        );
       case 'role_select':
         return (
           <RoleSelectionScreen 
@@ -319,12 +431,15 @@ const App: React.FC = () => {
           >
             <PatientHomeScreen 
               userName={userName}
+              userProfile={userProfile}
               onLogout={handleLogout} 
+              onProfileUpdate={fetchFullProfile}
               onNavigateToChat={handleNavigateToChat} 
               onNavigateToMedicines={handleNavigateToMedicineLibrary}
               onNavigateToPathologies={handleNavigateToPathologyLibrary}
               onNavigateToPreOp={handleNavigateToPreOp}
               onNavigate={handleBottomNav}
+              onSelectArticle={handleSelectArticle}
             />
           </ProtectedRoute>
         );
@@ -337,7 +452,7 @@ const App: React.FC = () => {
             currentRole={userRole || ''} 
             onRedirect={() => setCurrentScreen('login')}
           >
-            <DoctorDashboardScreen onLogout={handleLogout} userName={userName} />
+            <DoctorDashboardScreen onLogout={handleLogout} userName={userName} userProfile={userProfile} />
           </ProtectedRoute>
         );
 
@@ -348,7 +463,7 @@ const App: React.FC = () => {
             currentRole={userRole || ''} 
             onRedirect={() => setCurrentScreen('login')}
           >
-            <PharmacyDashboardScreen onLogout={handleLogout} userName={userName} />
+            <PharmacyDashboardScreen onLogout={handleLogout} userName={userName} userProfile={userProfile} />
           </ProtectedRoute>
         );
 
@@ -359,7 +474,7 @@ const App: React.FC = () => {
             currentRole={userRole || ''} 
             onRedirect={() => setCurrentScreen('login')}
           >
-            <LabDashboardScreen onLogout={handleLogout} userName={userName} />
+            <LabDashboardScreen onLogout={handleLogout} userName={userName} userProfile={userProfile} />
           </ProtectedRoute>
         );
       
@@ -389,6 +504,8 @@ const App: React.FC = () => {
             initialMessage={chatInitialMessage} 
             onBack={goBack} 
             onViewDoctorList={(specialty) => handleNavigateToDoctors(false, '', specialty)}
+            onViewPharmacyList={() => handleNavigateToPharmacies()}
+            onViewLabList={handleNavigateToLabs}
           />
         );
       case 'doctors':

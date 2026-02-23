@@ -29,16 +29,21 @@ const StatCard: React.FC<{ item: StatItem }> = ({ item }) => (
 interface PharmacyDashboardProps {
   onLogout: () => void;
   userName?: string;
+  userProfile?: any;
 }
 
 type DashboardView = 'overview' | 'inventory' | 'orders' | 'chat' | 'stats' | 'settings';
 
-export const PharmacyDashboardScreen: React.FC<PharmacyDashboardProps> = ({ onLogout, userName = "Farmacia" }) => {
+export const PharmacyDashboardScreen: React.FC<PharmacyDashboardProps> = ({ onLogout, userName = "Farmacia", userProfile }) => {
   const [currentView, setCurrentView] = useState<DashboardView>('overview');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isOpen, setIsOpen] = useState(true);
 
-  // --- Mock Data ---
+  const pharmacyData = userProfile?.pharmacy || {};
+  const city = pharmacyData.city || "Caracas";
+  const address = pharmacyData.address || "Dirección no especificada";
+
+  // ... (rest of mock data remains same for now)
   const stats = [
     { label: 'Ventas del Día', value: '$840.50', icon: DollarSign, color: 'bg-green-100 text-green-600' },
     { label: 'Pedidos Activos', value: '12', icon: ShoppingCart, color: 'bg-blue-100 text-blue-600' },
@@ -150,7 +155,7 @@ export const PharmacyDashboardScreen: React.FC<PharmacyDashboardProps> = ({ onLo
                <h2 className="text-xl font-heading font-bold text-gray-800">{userName}</h2>
                <div className="flex items-center gap-1 text-xs text-gray-500">
                   <MapPin size={12} />
-                  <span>Av. Urdaneta, Caracas</span>
+                  <span>{address}, {city}</span>
                </div>
             </div>
           </div>

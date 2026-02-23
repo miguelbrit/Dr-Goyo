@@ -117,6 +117,40 @@ export const LabListScreen: React.FC<LabListScreenProps> = ({
 }) => {
   const [showFilters, setShowFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [labs, setLabs] = useState<Laboratory[]>(LABS_DATA);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchLabs = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('http://localhost:5000/api/entities/laboratories');
+        const result = await response.json();
+        if (result.success && result.data.length > 0) {
+          const mapped = result.data.map((l: any) => ({
+            id: l.id,
+            name: l.profile?.name || l.name,
+            location: l.city || 'Venezuela',
+            address: l.address || 'Consultar dirección',
+            rating: 4.7, 
+            reviews: Math.floor(Math.random() * 150),
+            distance: '--',
+            image: l.profile?.imageUrl || 'https://images.unsplash.com/photo-1579154204601-01588f351e67?auto=format&fit=crop&q=80&w=400',
+            services: SERVICES, // Placeholder services
+            hours: `${l.openingHours || '07:00'} - ${l.closingHours || '18:00'}`,
+            phone: l.phone || 'N/A'
+          }));
+          setLabs(mapped);
+        }
+      } catch (err) {
+        console.error("Error loading labs:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchLabs();
+  }, []);
+
   
   // Filter States
   const [selectedLocation, setSelectedLocation] = useState<string>('');
@@ -134,7 +168,7 @@ export const LabListScreen: React.FC<LabListScreenProps> = ({
   const locations = ['Todos', 'Caracas', 'Maracaibo', 'Ciudad Bolívar', 'Barquisimeto', 'Sucre'];
 
   // Apply filters
-  const filteredLabs = LABS_DATA.filter(lab => {
+  const filteredLabs = labs.filter(lab => {
     // Search: Match Lab Name OR Service Name OR Location (Improved Logic)
     const query = searchQuery.toLowerCase();
     const matchesSearch = 

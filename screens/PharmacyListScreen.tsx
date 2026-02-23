@@ -124,10 +124,44 @@ export const PharmacyListScreen: React.FC<PharmacyListScreenProps> = ({
 }) => {
   const [showFilters, setShowFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState(initialSearchQuery);
-  
   // Filter States
   const [selectedLocation, setSelectedLocation] = useState<string>('');
   const [minRating, setMinRating] = useState<number>(0);
+  const [pharmacies, setPharmacies] = useState<Pharmacy[]>(PHARMACY_DATA);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchPharmacies = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('http://localhost:5000/api/entities/pharmacies');
+        const result = await response.json();
+        if (result.success && result.data.length > 0) {
+          const mapped = result.data.map((p: any) => ({
+            id: p.id,
+            name: p.profile?.name || p.name,
+            location: p.city || 'Venezuela',
+            address: p.address || 'Consultar dirección',
+            distance: '--',
+            rating: 4.6, 
+            reviews: Math.floor(Math.random() * 200),
+            isOpen: true,
+            image: p.profile?.imageUrl || 'https://images.unsplash.com/photo-1576602976047-174e57a47881?auto=format&fit=crop&q=80&w=400',
+            inventory: [...COMMON_MEDS], // Placeholder inventory
+            hours: `${p.openingHours || '08:00'} - ${p.closingHours || '20:00'}`,
+            phone: p.phone || 'N/A'
+          }));
+          setPharmacies(mapped);
+        }
+      } catch (err) {
+        console.error("Error loading pharmacies:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchPharmacies();
+  }, []);
+
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -141,7 +175,7 @@ export const PharmacyListScreen: React.FC<PharmacyListScreenProps> = ({
   const locations = ['Todos', 'Caracas', 'Maracaibo', 'Ciudad Bolívar', 'Barquisimeto', 'Mérida'];
 
   // Apply filters
-  const filteredPharmacies = PHARMACY_DATA.filter(pharmacy => {
+  const filteredPharmacies = pharmacies.filter(pharmacy => {
     // Search logic: Name of pharmacy OR name of medicine in inventory
     const query = searchQuery.toLowerCase();
     const matchesSearch = 

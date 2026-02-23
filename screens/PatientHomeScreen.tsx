@@ -4,28 +4,48 @@ import { Avatar } from '../components/Avatar';
 import { Carousel, CarouselItem } from '../components/Carousel';
 import { BottomNav } from '../components/BottomNav';
 import { Sidebar } from '../components/Sidebar';
+import { SuggestedArticles } from '../components/SuggestedArticles';
+import { Article } from '../types';
 
 interface PatientHomeScreenProps {
   userName?: string;
+  userProfile?: any;
   onLogout: () => void;
+  onProfileUpdate?: () => void;
   onNavigateToChat: (initialMessage?: string) => void;
   onNavigateToMedicines: () => void;
   onNavigateToPathologies: () => void;
   onNavigateToPreOp: () => void;
   onNavigate: (tab: string) => void; // For BottomNav
+  onSelectArticle: (article: Article) => void;
 }
 
 export const PatientHomeScreen: React.FC<PatientHomeScreenProps> = ({ 
   userName = "Usuario", 
+  userProfile,
   onLogout, 
+  onProfileUpdate,
   onNavigateToChat,
   onNavigateToMedicines,
   onNavigateToPathologies,
   onNavigateToPreOp,
-  onNavigate
+  onNavigate,
+  onSelectArticle
 }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [message, setMessage] = useState('');
+
+  const patientData = userProfile?.patient || {};
+  const city = patientData.city || "Ciudad no especificada";
+  
+  const calculateAge = (birthday: string) => {
+    if (!birthday) return null;
+    const ageDifMs = Date.now() - new Date(birthday).getTime();
+    const ageDate = new Date(ageDifMs);
+    return Math.abs(ageDate.getUTCFullYear() - 1970);
+  };
+
+  const age = calculateAge(patientData.birthDate);
 
   // Reorganized cards according to new requirements
   const interestItems = [
@@ -97,7 +117,7 @@ export const PatientHomeScreen: React.FC<PatientHomeScreenProps> = ({
           </h1>
           <button onClick={() => setIsSidebarOpen(true)} className="flex-shrink-0">
             <Avatar 
-              src="https://images.unsplash.com/photo-1599566150163-29194dcaad36?auto=format&fit=crop&q=80&w=200&h=200" 
+              src={userProfile?.imageUrl || `https://i.pravatar.cc/150?u=${userName}`} 
               alt={userName} 
               size="md" 
             />
@@ -106,12 +126,14 @@ export const PatientHomeScreen: React.FC<PatientHomeScreenProps> = ({
         
         <div className="flex items-center gap-1.5 text-gray-light text-sm font-medium">
           <MapPin size={15} className="text-primary" />
-          <span>Caracas, Venezuela</span>
+          <span>{city}, Venezuela</span>
         </div>
       </header>
 
       <main className="px-6 py-6 space-y-6">
         
+        {/* Health Overview Card (Linked to Dr. Goyo AI) */}
+
         {/* Chat Section */}
         <section>
           <div className="bg-card rounded-2xl shadow-lg shadow-primary/5 p-2 border border-border-main flex items-center gap-2">
@@ -174,6 +196,17 @@ export const PatientHomeScreen: React.FC<PatientHomeScreenProps> = ({
           </div>
         </section>
 
+        {/* Recommended Readings Section */}
+        <section className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">
+           <div className="flex items-center justify-between mb-2">
+              <h2 className="font-heading font-semibold text-text-main text-lg">Lecturas Recomendadas</h2>
+           </div>
+           
+           <div className="space-y-2 -mx-4">
+              <SuggestedArticles section={"general" as any} onArticleClick={onSelectArticle} />
+           </div>
+        </section>
+
       </main>
 
       <BottomNav activeTab="home" onTabChange={onNavigate} />
@@ -182,7 +215,9 @@ export const PatientHomeScreen: React.FC<PatientHomeScreenProps> = ({
         isOpen={isSidebarOpen} 
         onClose={() => setIsSidebarOpen(false)} 
         userName={userName}
-        userImage="https://images.unsplash.com/photo-1599566150163-29194dcaad36?auto=format&fit=crop&q=80&w=200&h=200"
+        userImage={userProfile?.imageUrl || `https://i.pravatar.cc/150?u=${userName}`}
+        userProfile={userProfile}
+        onProfileUpdate={onProfileUpdate}
         onLogout={onLogout}
       />
     </div>

@@ -126,7 +126,9 @@ export const SuggestedArticles: React.FC<SuggestedArticlesProps> = ({ section, o
   
   // Logic to filter articles based on section
   const getRelevantArticles = () => {
-    switch (section) {
+    switch (section as any) {
+      case 'general':
+        return SUGGESTED_ARTICLES_DB.filter((_, i) => i % 3 === 0).slice(0, 5); // Mix of articles
       case 'doctors':
         return SUGGESTED_ARTICLES_DB.filter(art => 
           ['Cardiología', 'Medicina General', 'Neurología', 'Pediatría', 'Ginecología'].includes(art.category)
@@ -164,6 +166,7 @@ export const SuggestedArticles: React.FC<SuggestedArticlesProps> = ({ section, o
         <h3 className="font-heading font-bold text-lg text-text-main">
           {section === 'doctors' ? 'Lecturas Médicas' : 
            section === 'pharmacy' ? 'Consejos Farmacéuticos' : 
+           (section as any) === 'general' ? 'Lecturas Recomendadas' :
            'Información de Laboratorio'}
         </h3>
       </div>

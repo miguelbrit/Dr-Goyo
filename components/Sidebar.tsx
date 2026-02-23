@@ -10,20 +10,27 @@ interface SidebarProps {
   onClose: () => void;
   userName: string;
   userImage?: string;
+  userProfile?: any;
+  onProfileUpdate?: () => void;
   onLogout: () => void;
 }
 
 type SidebarView = 'menu' | 'details' | 'history' | 'settings';
 
-export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, userName, userImage, onLogout }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ 
+  isOpen, onClose, userName, userImage, userProfile, onProfileUpdate, onLogout 
+}) => {
   const [currentView, setCurrentView] = useState<SidebarView>('menu');
 
   // Reset view when sidebar closes
   useEffect(() => {
+    if (isOpen && onProfileUpdate) {
+      onProfileUpdate();
+    }
     if (!isOpen) {
       setTimeout(() => setCurrentView('menu'), 300);
     }
-  }, [isOpen]);
+  }, [isOpen, onProfileUpdate]);
 
   const menuItems = [
     { id: 'details', icon: User, label: 'Datos Personales' },
@@ -39,7 +46,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, userName, use
 
   const renderContent = () => {
     switch (currentView) {
-      case 'details': return <ProfileDetails />;
+      case 'details': return <ProfileDetails userProfile={userProfile} onUpdate={onProfileUpdate} />;
       case 'history': return <AppointmentHistory />;
       case 'settings': return <AppSettings />;
       default:

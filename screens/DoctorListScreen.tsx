@@ -144,7 +144,7 @@ const DOCTOR_BANNERS: CarouselItem[] = [
   },
   {
     id: 'd2',
-    image: '/imagenes/telemedicinas.jpg',
+    image: '/imagenes/telemedicina.jpg',
     title: 'Telemedicina',
     subtitle: 'Consulta con médicos certificados desde la comodidad de tu hogar.'
   }
@@ -171,11 +171,50 @@ export const DoctorListScreen: React.FC<DoctorListScreenProps> = ({
 }) => {
   const [showFilters, setShowFilters] = useState(initialOpenFilters);
   const [searchQuery, setSearchQuery] = useState(initialSearchQuery);
-  
   // Filter States
   const [selectedSpecialty, setSelectedSpecialty] = useState<string>(initialSpecialty);
   const [selectedLocation, setSelectedLocation] = useState<string>('');
   const [minRating, setMinRating] = useState<number>(0);
+  const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchDoctors();
+  }, []);
+
+  const fetchDoctors = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('http://localhost:5000/api/entities/doctors');
+      const result = await response.json();
+      if (result.success) {
+        // Map backend entities to frontend Doctor type
+        const mappedDoctors = result.data.map((d: any) => ({
+          id: d.id,
+          name: d.profile?.name || d.name,
+          specialty: d.specialty || 'General',
+          location: d.city || 'Venezuela',
+          distance: 'A consultoría',
+          rating: 4.5, // Placeholder
+          reviews: 0,
+          price: d.consultationPrice || 0,
+          image: d.profile?.imageUrl || 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&q=80&w=300&h=300',
+          nextAvailable: 'Consultar disponibilidad',
+          about: `Especialista con ${d.experienceYears || 0} años de experiencia.`,
+          experience: d.experienceYears,
+          patients: 0
+        }));
+        setDoctors(mappedDoctors.length > 0 ? mappedDoctors : DOCTORS_DATA);
+      } else {
+        setDoctors(DOCTORS_DATA);
+      }
+    } catch (err) {
+      console.error("Error fetching doctors:", err);
+      setDoctors(DOCTORS_DATA);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
@@ -211,7 +250,7 @@ export const DoctorListScreen: React.FC<DoctorListScreenProps> = ({
   ];
 
   // Apply filters
-  const filteredDoctors = DOCTORS_DATA.filter(doc => {
+  const filteredDoctors = doctors.filter(doc => {
     const query = searchQuery.toLowerCase();
     const matchesSearch = doc.name.toLowerCase().includes(query) || 
                           doc.specialty.toLowerCase().includes(query);

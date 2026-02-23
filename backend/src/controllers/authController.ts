@@ -1,76 +1,115 @@
 import { Request, Response } from 'express';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
 import prisma from '../utils/prisma.js';
+import { supabase } from '../utils/supabase.js';
 import { AuthRequest } from '../middleware/auth.js';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'secret_goyo';
-
 export const register = async (req: Request, res: Response) => {
-  const { name, email, password, type, specialty, license, address, testTypes } = req.body;
+  const { 
+    name, surname, email, password, type, 
+    phone, birthDate, gender, weight, height,
+    specialty, license, city, experienceYears, consultationPrice, insuranceAffiliations, 
+    address, openingHours, closingHours, hasDelivery, testTypes 
+  } = req.body;
 
   try {
     const normalizedEmail = email.toLowerCase().trim();
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const user = await prisma.user.create({
+
+    // 1. Create user in Supabase Auth (admin bypasses email confirmation if configured)
+    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      email: normalizedEmail,
+      password: password,
+      email_confirm: true,
+      user_metadata: { name, type }
+    });
+
+    if (authError) throw authError;
+    if (!authData.user) throw new Error('Error al crear usuario en Auth');
+
+    const authId = authData.user.id;
+
+    // 2. Create Profile in public schema
+    const profile = await prisma.profile.create({
       data: {
+        id: authId,
         name,
-        email: normalizedEmail,
-        passwordHash: hashedPassword,
+        surname,
         type,
       },
     });
 
-    // Create profile if necessary with specialized data
-    if (type === 'Medico') {
-      await prisma.doctor.create({ 
-        data: { 
-          userId: user.id,
-          name: name,
-          specialty,
-          license
-        } 
-      });
+    // 3. Create Specific Entity Profile
+    switch (type) {
+      case 'Paciente':
+        await prisma.patient.create({
+          data: {
+            profileId: authId,
+            phone,
+            birthDate: birthDate ? new Date(birthDate) : undefined,
+            gender,
+            weight: weight ? parseFloat(weight.toString()) : undefined,
+            height: height ? parseFloat(height.toString()) : undefined,
+            city,
+          }
+        });
+        break;
+      case 'Medico':
+        await prisma.doctor.create({ 
+          data: { 
+            profileId: authId,
+            name,
+            specialty,
+            license,
+            city,
+            experienceYears: experienceYears ? parseInt(experienceYears) : undefined,
+            consultationPrice: consultationPrice ? parseFloat(consultationPrice) : undefined,
+            insuranceAffiliations
+          } 
+        });
+        break;
+      case 'Farmacia':
+        await prisma.pharmacy.create({ 
+          data: { 
+            profileId: authId,
+            name,
+            address,
+            city,
+            openingHours,
+            closingHours,
+            hasDelivery: hasDelivery === true || hasDelivery === 'true'
+          } 
+        });
+        break;
+      case 'Laboratorio':
+        await prisma.laboratory.create({ 
+          data: { 
+            profileId: authId,
+            name,
+            address,
+            city,
+            testTypes,
+            openingHours,
+            closingHours
+          } 
+        });
+        break;
     }
-    if (type === 'Farmacia') {
-      await prisma.pharmacy.create({ 
-        data: { 
-          userId: user.id,
-          name: name,
-          address
-        } 
-      });
-    }
-    if (type === 'Laboratorio') {
-      await prisma.laboratory.create({ 
-        data: { 
-          userId: user.id,
-          name: name,
-          address,
-          testTypes
-        } 
-      });
-    }
-
-    const token = jwt.sign({ id: user.id, type: user.type }, JWT_SECRET, { expiresIn: '24h' });
 
     res.status(201).json({ 
       success: true, 
       message: 'Usuario registrado exitosamente', 
-      token,
       user: { 
-        id: user.id, 
-        name: user.name, 
-        type: user.type,
+        id: authId, 
+        name: profile.name, 
+        type: profile.type,
         role: type === 'Medico' ? 'doctor' : type === 'Farmacia' ? 'pharmacy' : type === 'Laboratorio' ? 'lab' : 'patient'
       } 
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Registration Error:', error);
     res.status(400).json({ 
       success: false, 
       error: 'Error al registrar usuario',
-      message: error instanceof Error ? error.message : 'Error desconocido'
+      message: error.message || 'Error desconocido'
     });
   }
 };
@@ -80,30 +119,37 @@ export const login = async (req: Request, res: Response) => {
 
   try {
     const normalizedEmail = email.toLowerCase().trim();
-    const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
-    
-    if (!user) {
-      console.log(`Login attempt failed: User not found for email ${normalizedEmail}`);
+
+    // 1. Sign in with Supabase Auth
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+      email: normalizedEmail,
+      password: password
+    });
+
+    if (authError) {
       return res.status(401).json({ 
         success: false, 
         error: 'Credenciales inválidas', 
-        message: 'El correo electrónico no está registrado' 
+        message: authError.message 
       });
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
-    if (!isPasswordValid) {
-      console.log(`Login attempt failed: Password mismatch for ${normalizedEmail}`);
-      return res.status(401).json({ 
-        success: false, 
-        error: 'Credenciales inválidas', 
-        message: 'La contraseña es incorrecta' 
-      });
-    }
+    const authUser = authData.user;
+    const token = authData.session?.access_token;
 
-    const token = jwt.sign({ id: user.id, type: user.type }, JWT_SECRET, { expiresIn: '24h' });
+    // 2. Fetch extended profile from Prisma
+    const profile = await prisma.profile.findUnique({ 
+      where: { id: authUser.id } 
+    });
     
-    // Convert DB type to frontend role format
+    if (!profile) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Perfil no encontrado', 
+        message: 'No existe un perfil vinculado a este usuario' 
+      });
+    }
+
     const roleMapping: Record<string, string> = {
       'Paciente': 'patient',
       'Medico': 'doctor',
@@ -115,27 +161,28 @@ export const login = async (req: Request, res: Response) => {
       success: true, 
       token, 
       user: { 
-        id: user.id, 
-        name: user.name, 
-        type: user.type,
-        role: roleMapping[user.type] || 'patient'
+        id: profile.id, 
+        name: profile.name, 
+        type: profile.type,
+        role: roleMapping[profile.type] || 'patient'
       } 
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Login Error:', error);
     res.status(500).json({ 
       success: false, 
       error: 'Error en el servidor',
-      message: 'Hubo un problema al procesar tu inicio de sesión'
+      message: error.message || 'Hubo un problema al procesar tu inicio de sesión'
     });
   }
 };
 
 export const getProfile = async (req: AuthRequest, res: Response) => {
   try {
-    const user = await prisma.user.findUnique({
+    const profile = await prisma.profile.findUnique({
       where: { id: req.user?.id },
       include: {
+        patient: true,
         doctor: true,
         pharmacy: true,
         laboratory: true,
@@ -143,13 +190,158 @@ export const getProfile = async (req: AuthRequest, res: Response) => {
     });
     res.json({
       success: true,
-      data: user
+      data: profile
     });
   } catch (error) {
     console.error('Profile Error:', error);
     res.status(500).json({ 
       success: false, 
       error: 'Error al obtener perfil' 
+    });
+  }
+};
+
+export const updateProfile = async (req: AuthRequest, res: Response) => {
+  const { 
+    name, surname, imageUrl, 
+    birthDate, gender, weight, height, phone, address, city, country, bloodType, allergies, healthStatus
+  } = req.body;
+
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, error: 'No autorizado' });
+    }
+
+    // 1. Update Profile table
+    const updatedProfile = await prisma.profile.update({
+      where: { id: userId },
+      data: {
+        name,
+        surname,
+        imageUrl,
+        weight: weight ? parseFloat(weight.toString()) : undefined,
+        height: height ? parseFloat(height.toString()) : undefined,
+        healthStatus,
+      }
+    });
+
+    // 2. Update specific entity profile if needed
+    if (updatedProfile.type === 'Paciente') {
+      await prisma.patient.upsert({
+        where: { profileId: userId },
+        update: {
+          birthDate: birthDate ? new Date(birthDate) : undefined,
+          gender,
+          weight: weight ? parseFloat(weight.toString()) : undefined,
+          height: height ? parseFloat(height.toString()) : undefined,
+          phone,
+          address,
+          city,
+          country,
+          bloodType,
+          allergies,
+        },
+        create: {
+          profileId: userId,
+          birthDate: birthDate ? new Date(birthDate) : undefined,
+          gender,
+          weight: weight ? parseFloat(weight.toString()) : undefined,
+          height: height ? parseFloat(height.toString()) : undefined,
+          phone,
+          address,
+          city,
+          country,
+          bloodType,
+          allergies,
+        }
+      });
+    }
+
+    const fullProfile = await prisma.profile.findUnique({
+      where: { id: userId },
+      include: {
+        patient: true,
+        doctor: true,
+        pharmacy: true,
+        laboratory: true,
+      }
+    });
+
+    res.json({
+      success: true,
+      message: 'Perfil actualizado correctamente',
+      data: fullProfile
+    });
+  } catch (error: any) {
+    console.error('Update Profile Error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Error al actualizar perfil',
+      message: error.message || 'Error desconocido'
+    });
+  }
+};
+
+export const forgotPassword = async (req: Request, res: Response) => {
+  const { email } = req.body;
+  console.log('Solicitud de recuperación para:', email);
+
+  try {
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // Send reset password email via Supabase
+    const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
+      redirectTo: 'http://localhost:3000/reset-password', 
+    });
+
+    if (error) throw error;
+
+    res.json({
+      success: true,
+      message: 'Correo de recuperación enviado exitosamente'
+    });
+  } catch (error: any) {
+    console.error('Forgot Password Error:', error);
+    res.status(400).json({
+      success: false,
+      error: 'Error al enviar correo',
+      message: error.message || 'Error desconocido'
+    });
+  }
+};
+
+export const resetPassword = async (req: Request, res: Response) => {
+  const { password } = req.body;
+  // Note: For this to work with the service role, we need the user's ID.
+  // In a real flow, the recovery link signs the user in, and we'd get the ID from the JWT.
+  // Since this is a restricted test environment, we'll try to get it from the session if provided
+  // or use a middleware if we were authenticated.
+  
+  // For now, let's assume we use the authMiddleware to get the userId
+  const userId = (req as any).user?.id;
+
+  if (!userId) {
+    return res.status(401).json({ success: false, error: 'No autorizado / Sesión de recuperación expirada' });
+  }
+
+  try {
+    const { error } = await supabase.auth.admin.updateUserById(userId, {
+      password: password
+    });
+
+    if (error) throw error;
+
+    res.json({
+      success: true,
+      message: 'Contraseña actualizada correctamente'
+    });
+  } catch (error: any) {
+    console.error('Reset Password Error:', error);
+    res.status(400).json({
+      success: false,
+      error: 'Error al actualizar contraseña',
+      message: error.message || 'Error desconocido'
     });
   }
 };

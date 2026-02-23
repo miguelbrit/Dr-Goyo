@@ -28,14 +28,18 @@ const StatCard: React.FC<{ item: StatItem }> = ({ item }) => (
 interface LabDashboardProps {
   onLogout: () => void;
   userName?: string;
+  userProfile?: any;
 }
 
 type DashboardView = 'overview' | 'services' | 'appointments' | 'results' | 'chat' | 'stats' | 'settings';
 
-export const LabDashboardScreen: React.FC<LabDashboardProps> = ({ onLogout, userName = "Laboratorio" }) => {
+export const LabDashboardScreen: React.FC<LabDashboardProps> = ({ onLogout, userName = "Laboratorio", userProfile }) => {
   const [currentView, setCurrentView] = useState<DashboardView>('overview');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isOpen, setIsOpen] = useState(true);
+
+  const labData = userProfile?.laboratory || {};
+  const city = labData.city || "Caracas";
 
   // --- Mock Data ---
   const stats = [
@@ -150,7 +154,7 @@ export const LabDashboardScreen: React.FC<LabDashboardProps> = ({ onLogout, user
                <div className="flex items-center gap-2 text-xs text-gray-500">
                   <span className="flex items-center gap-1"><AlertCircle size={10} className="text-yellow-500"/> Ranking 4.8/5.0</span>
                   <span>•</span>
-                  <span>Caracas, Venezuela</span>
+                  <span>{city}, Venezuela</span>
                </div>
             </div>
           </div>

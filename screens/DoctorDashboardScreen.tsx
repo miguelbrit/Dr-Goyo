@@ -9,14 +9,20 @@ import { Button } from '../components/Button';
 interface DoctorDashboardProps {
   onLogout: () => void;
   userName?: string;
+  userProfile?: any;
 }
 
 type DashboardView = 'overview' | 'appointments' | 'patients' | 'calendar' | 'chat' | 'earnings' | 'settings';
 
-export const DoctorDashboardScreen: React.FC<DoctorDashboardProps> = ({ onLogout, userName = "Doctor" }) => {
+export const DoctorDashboardScreen: React.FC<DoctorDashboardProps> = ({ onLogout, userName = "Doctor", userProfile }) => {
   const [currentView, setCurrentView] = useState<DashboardView>('overview');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isAvailable, setIsAvailable] = useState(true);
+
+  const doctorData = userProfile?.doctor || {};
+  const specialty = doctorData.specialty || "Especialista";
+  const experience = doctorData.experienceYears || "0";
+  const city = doctorData.city || "No especificada";
 
   // --- Mock Data ---
   const stats = [
@@ -183,10 +189,13 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardProps> = ({ onLogout
             
             <div className="flex items-center gap-3 border-l border-gray-200 pl-6">
               <div className="text-right hidden md:block">
-                <p className="text-sm font-bold text-gray-900">{userName}</p>
-                <p className="text-xs text-primary font-medium">Cardiólogo</p>
+                <div className="flex items-center gap-1 justify-end">
+                   <p className="text-sm font-bold text-gray-900">{userName}</p>
+                   {doctorData.license && <CheckCircle size={14} className="text-primary" />}
+                </div>
+                <p className="text-xs text-primary font-medium">{specialty}</p>
               </div>
-              <Avatar src="https://i.pravatar.cc/150?u=doc" alt="Dr" size="md" />
+              <Avatar src={doctorData.imageUrl || `https://i.pravatar.cc/150?u=${userName}`} alt="Dr" size="md" />
             </div>
           </div>
         </header>
