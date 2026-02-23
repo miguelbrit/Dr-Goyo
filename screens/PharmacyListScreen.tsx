@@ -134,7 +134,7 @@ export const PharmacyListScreen: React.FC<PharmacyListScreenProps> = ({
     const fetchPharmacies = async () => {
       try {
         setLoading(true);
-        const response = await fetch('http://localhost:5000/api/entities/pharmacies');
+        const response = await fetch('/api/entities/pharmacies');
         const result = await response.json();
         if (result.success && result.data.length > 0) {
           const mapped = result.data.map((p: any) => ({

@@ -94,7 +94,7 @@ export const ProfileDetails: React.FC<ProfileDetailsProps> = ({ userProfile, onU
     formDataUpload.append('image', file);
 
     try {
-      const response = await fetch('http://localhost:5000/api/users/upload-image', {
+      const response = await fetch('/api/users/upload-image', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -114,7 +114,7 @@ export const ProfileDetails: React.FC<ProfileDetailsProps> = ({ userProfile, onU
       if (data.success) {
         setFormData(prev => ({ ...prev, imageUrl: data.imageUrl }));
         // Guardar automáticamente la URL de la imagen para que sea persistente
-        await fetch('http://localhost:5000/api/users/update-profile', {
+        await fetch('/api/users/update-profile', {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json',
@@ -140,7 +140,7 @@ export const ProfileDetails: React.FC<ProfileDetailsProps> = ({ userProfile, onU
     setMessage(null);
 
     try {
-      const response = await fetch('http://localhost:5000/api/users/update-profile', {
+      const response = await fetch('/api/users/update-profile', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

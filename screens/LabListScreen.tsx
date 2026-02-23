@@ -124,7 +124,7 @@ export const LabListScreen: React.FC<LabListScreenProps> = ({
     const fetchLabs = async () => {
       try {
         setLoading(true);
-        const response = await fetch('http://localhost:5000/api/entities/laboratories');
+        const response = await fetch('/api/entities/laboratories');
         const result = await response.json();
         if (result.success && result.data.length > 0) {
           const mapped = result.data.map((l: any) => ({

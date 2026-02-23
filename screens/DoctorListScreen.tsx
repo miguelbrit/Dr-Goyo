@@ -185,7 +185,7 @@ export const DoctorListScreen: React.FC<DoctorListScreenProps> = ({
   const fetchDoctors = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:5000/api/entities/doctors');
+      const response = await fetch('/api/entities/doctors');
       const result = await response.json();
       if (result.success) {
         // Map backend entities to frontend Doctor type
