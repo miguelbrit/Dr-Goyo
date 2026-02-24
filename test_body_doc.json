@@ -1,0 +1,13 @@
+{
+  "name": "Carlos",
+  "surname": "Perez",
+  "email": "reg-doc-test3@drgoyo.com",
+  "password": "password123",
+  "type": "Medico",
+  "specialty": "Pediatria",
+  "license": "P-445566",
+  "experienceYears": 8,
+  "consultationPrice": 45,
+  "city": "Caracas",
+  "address": "Calle del Sol #12"
+}

@@ -1,3 +1,10 @@
+export interface Availability {
+  id?: string;
+  dayOfWeek: number;
+  startTime: string;
+  endTime: string;
+  isActive: boolean;
+}
 
 export interface Doctor {
   id: string;
@@ -14,6 +21,7 @@ export interface Doctor {
   experience?: number; // Years
   patients?: number; // Number of patients
   isFeatured?: boolean;
+  availability?: Availability[];
 }
 
 export interface Medicament {
@@ -106,7 +114,7 @@ export interface Article {
   title: string;
   subtitle?: string;
   category: string;
-  specialty: string; // Smart connection
+  specialty?: string; // Smart connection
   author: string;
   status: 'published' | 'draft';
   publishDate: string;

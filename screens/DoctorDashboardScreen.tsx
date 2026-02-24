@@ -1,43 +1,83 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, Calendar, Users, MessageSquare, DollarSign, Settings, LogOut, 
-  Bell, Search, Menu, X, ChevronRight, Clock, MapPin, MoreVertical, CheckCircle, XCircle, Filter 
+  Bell, Search, Menu, X, ChevronRight, Clock, MapPin, MoreVertical, CheckCircle, XCircle, Filter, Loader2 
 } from 'lucide-react';
 import { Avatar } from '../components/Avatar';
 import { Button } from '../components/Button';
+import { DoctorProfileDetails } from '../components/DoctorProfileDetails';
+import { ScheduleConfig } from '../components/ScheduleConfig';
+import { formatDateTime12h } from '../utils/formatters';
 
 interface DoctorDashboardProps {
   onLogout: () => void;
   userName?: string;
   userProfile?: any;
+  onProfileUpdate?: () => void;
 }
 
 type DashboardView = 'overview' | 'appointments' | 'patients' | 'calendar' | 'chat' | 'earnings' | 'settings';
 
-export const DoctorDashboardScreen: React.FC<DoctorDashboardProps> = ({ onLogout, userName = "Doctor", userProfile }) => {
+export const DoctorDashboardScreen: React.FC<DoctorDashboardProps> = ({ onLogout, userName: initialUserName = "Doctor", userProfile: initialUserProfile }) => {
   const [currentView, setCurrentView] = useState<DashboardView>('overview');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isAvailable, setIsAvailable] = useState(true);
+  const [loading, setLoading] = useState(!initialUserProfile);
+  const [profile, setProfile] = useState(initialUserProfile);
+  const [userName, setUserName] = useState(initialUserName);
 
-  const doctorData = userProfile?.doctor || {};
+  useEffect(() => {
+    if (!profile) {
+      fetchProfile();
+    }
+  }, []);
+
+  const fetchProfile = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/users/profile', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const result = await response.json();
+      if (result.success) {
+        setProfile(result.data);
+        setUserName(result.data.name);
+      }
+    } catch (err) {
+      console.error("Error fetching doctor profile:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const doctorData = profile?.doctor || {};
   const specialty = doctorData.specialty || "Especialista";
   const experience = doctorData.experienceYears || "0";
   const city = doctorData.city || "No especificada";
 
-  // --- Mock Data ---
+  // --- Real Stats & Data ---
+  const appointmentsData = doctorData.appointments || [];
+  const completedAppointments = appointmentsData.filter((a: any) => a.status === 'completed');
+  
+  // Calculate Patients (Unique patients from appointments)
+  const uniquePatients = Array.from(new Set(appointmentsData.map((a: any) => a.patientId))).length;
+  
+  // Calculate Earnings
+  const totalEarnings = completedAppointments.reduce((sum: number, a: any) => sum + (a.price || 0), 0);
+
   const stats = [
-    { label: 'Pacientes Totales', value: '1,204', icon: Users, color: 'bg-blue-100 text-blue-600' },
-    { label: 'Citas Hoy', value: '8', icon: Calendar, color: 'bg-teal-100 text-teal-600' },
-    { label: 'Ingresos Mes', value: '$3,450', icon: DollarSign, color: 'bg-green-100 text-green-600' },
-    { label: 'Mensajes', value: '12', icon: MessageSquare, color: 'bg-purple-100 text-purple-600' },
+    { label: 'Pacientes Totales', value: uniquePatients.toString(), icon: Users, color: 'bg-blue-100 text-blue-600' },
+    { label: 'Citas Hoy', value: appointmentsData.filter((a: any) => {
+        const today = new Date().toISOString().split('T')[0];
+        const aptDate = new Date(a.date).toISOString().split('T')[0];
+        return aptDate === today;
+      }).length.toString(), icon: Calendar, color: 'bg-teal-100 text-teal-600' },
+    { label: 'Ingresos Totales', value: `$${totalEarnings.toFixed(2)}`, icon: DollarSign, color: 'bg-green-100 text-green-600' },
+    { label: 'Nuevos Mensajes', value: '0', icon: MessageSquare, color: 'bg-purple-100 text-purple-600' },
   ];
 
-  const appointments = [
-    { id: 1, patient: 'Ana García', time: '09:00 AM', type: 'Primera Consulta', status: 'confirmed', image: 'https://i.pravatar.cc/150?u=1' },
-    { id: 2, patient: 'Carlos Ruiz', time: '10:30 AM', type: 'Seguimiento', status: 'pending', image: 'https://i.pravatar.cc/150?u=2' },
-    { id: 3, patient: 'Maria Lopez', time: '11:00 AM', type: 'Resultados', status: 'confirmed', image: 'https://i.pravatar.cc/150?u=3' },
-    { id: 4, patient: 'Jose Diaz', time: '02:00 PM', type: 'Urgencia', status: 'cancelled', image: 'https://i.pravatar.cc/150?u=4' },
-  ];
+  const appointments = appointmentsData;
 
   // --- Components ---
 
@@ -70,35 +110,49 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardProps> = ({ onLogout
     </div>
   );
 
-  const AppointmentRow = ({ apt }: { apt: typeof appointments[0] }) => (
+  const AppointmentRow = ({ apt }: { apt: any }) => (
     <div className="flex items-center justify-between p-4 bg-white border border-gray-100 rounded-xl hover:shadow-md transition-all group">
       <div className="flex items-center gap-4">
-        <img src={apt.image} alt={apt.patient} className="w-12 h-12 rounded-full object-cover" />
+        {apt.patient?.profile?.imageUrl ? (
+          <img src={apt.patient.profile.imageUrl} alt="" className="w-12 h-12 rounded-full object-cover" />
+        ) : (
+          <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+            {apt.patient?.profile?.name?.charAt(0) || 'P'}
+          </div>
+        )}
         <div>
-          <h4 className="font-bold text-gray-900">{apt.patient}</h4>
-          <p className="text-sm text-gray-500">{apt.type}</p>
+          <h4 className="font-bold text-gray-900">{apt.patient?.profile?.name} {apt.patient?.profile?.surname}</h4>
+          <p className="text-xs text-gray-500 font-medium">
+            {formatDateTime12h(apt.date)}
+          </p>
         </div>
       </div>
-      <div className="flex items-center gap-6">
-        <div className="flex items-center gap-2 text-sm font-medium text-gray-600 bg-gray-50 px-3 py-1 rounded-lg">
-          <Clock size={16} />
-          {apt.time}
-        </div>
-        <div className={`text-xs font-bold px-3 py-1 rounded-full uppercase ${
-          apt.status === 'confirmed' ? 'bg-green-100 text-green-700' :
-          apt.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-          'bg-red-100 text-red-700'
-        }`}>
-          {apt.status === 'confirmed' ? 'Confirmada' : apt.status === 'pending' ? 'Pendiente' : 'Cancelada'}
-        </div>
-        <button className="p-2 hover:bg-gray-100 rounded-full text-gray-400 group-hover:text-primary">
-          <ChevronRight size={20} />
-        </button>
+      <div className="flex items-center gap-3">
+         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
+            apt.status === 'upcoming' ? 'bg-blue-100 text-blue-600' : 
+            apt.status === 'completed' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
+         }`}>
+            {apt.status}
+         </span>
+         <button className="p-2 text-gray-400 group-hover:text-primary transition-colors">
+            <ChevronRight size={18} />
+         </button>
       </div>
     </div>
   );
 
   // --- Main Render ---
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-bg flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 text-primary animate-spin mx-auto mb-4" />
+          <p className="text-gray-500 font-medium font-heading">Cargando dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-bg flex">
@@ -195,7 +249,7 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardProps> = ({ onLogout
                 </div>
                 <p className="text-xs text-primary font-medium">{specialty}</p>
               </div>
-              <Avatar src={doctorData.imageUrl || `https://i.pravatar.cc/150?u=${userName}`} alt="Dr" size="md" />
+              <Avatar src={profile?.imageUrl || doctorData.imageUrl || `https://i.pravatar.cc/150?u=${userName}`} alt="Dr" size="md" />
             </div>
           </div>
         </header>
@@ -223,7 +277,14 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardProps> = ({ onLogout
                         </button>
                      </div>
                      <div className="space-y-4">
-                        {appointments.map(apt => <AppointmentRow key={apt.id} apt={apt} />)}
+                        {appointments.length > 0 ? (
+                          appointments.map((apt: any) => <AppointmentRow key={apt.id} apt={apt} />)
+                        ) : (
+                          <div className="bg-white p-12 rounded-2xl border border-dashed border-gray-200 text-center">
+                            <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                            <p className="text-gray-500 font-medium font-heading">No hay citas programadas hoy</p>
+                          </div>
+                        )}
                      </div>
                      
                      {/* Weekly Chart Placeholder */}
@@ -249,27 +310,15 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardProps> = ({ onLogout
                   <div className="space-y-6">
                      <div className="bg-gradient-to-br from-secondary to-blue-900 rounded-2xl p-6 text-white shadow-lg">
                         <h3 className="font-heading font-bold text-lg mb-1">Saldo Disponible</h3>
-                        <p className="text-3xl font-bold mb-4">$1,250.00</p>
-                        <p className="text-sm text-blue-200 mb-6">Próximo pago: 15 de Octubre</p>
-                        <Button label="Retirar Fondos" fullWidth className="bg-white text-secondary hover:bg-blue-50" />
+                        <p className="text-3xl font-bold mb-4">$0.00</p>
+                        <p className="text-sm text-blue-200 mb-6">Sin pagos pendientes</p>
+                        <Button label="Retirar Fondos" fullWidth className="bg-white text-secondary hover:bg-blue-50" disabled />
                      </div>
 
                      <div className="bg-white p-6 rounded-2xl shadow-soft border border-gray-100">
                         <h3 className="font-heading font-bold text-lg text-gray-900 mb-4">Solicitudes Recientes</h3>
-                        <div className="space-y-4">
-                           {[1, 2].map((i) => (
-                              <div key={i} className="flex gap-3 items-start border-b border-gray-50 pb-4 last:border-0 last:pb-0">
-                                 <div className="w-2 h-2 mt-2 rounded-full bg-primary flex-shrink-0"></div>
-                                 <div>
-                                    <p className="text-sm font-bold text-gray-800">Nuevo paciente asignado</p>
-                                    <p className="text-xs text-gray-500 mb-2">Hace 2 horas</p>
-                                    <div className="flex gap-2">
-                                       <button className="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded">Aceptar</button>
-                                       <button className="text-xs font-bold text-red-500 bg-red-50 px-2 py-1 rounded">Rechazar</button>
-                                    </div>
-                                 </div>
-                              </div>
-                           ))}
+                        <div className="space-y-4 py-8 text-center">
+                           <p className="text-sm text-gray-400 font-medium font-heading">No tienes solicitudes nuevas</p>
                         </div>
                      </div>
                   </div>
@@ -298,46 +347,186 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardProps> = ({ onLogout
                         </tr>
                      </thead>
                      <tbody className="divide-y divide-gray-100">
-                        {appointments.map((apt) => (
-                           <tr key={apt.id} className="hover:bg-gray-50/50 transition-colors">
-                              <td className="p-4">
-                                 <div className="flex items-center gap-3">
-                                    <img src={apt.image} alt="" className="w-10 h-10 rounded-full" />
-                                    <span className="font-bold text-gray-900">{apt.patient}</span>
-                                 </div>
-                              </td>
-                              <td className="p-4 text-sm text-gray-600">{apt.time}, Hoy</td>
-                              <td className="p-4 text-sm text-gray-600">{apt.type}</td>
-                              <td className="p-4">
-                                 <span className={`text-xs font-bold px-3 py-1 rounded-full uppercase ${
-                                    apt.status === 'confirmed' ? 'bg-green-100 text-green-700' :
-                                    apt.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                                    'bg-red-100 text-red-700'
-                                 }`}>
-                                    {apt.status}
-                                 </span>
-                              </td>
-                              <td className="p-4 text-right">
-                                 <button className="text-primary font-bold text-sm hover:underline">Ver Detalle</button>
-                              </td>
-                           </tr>
-                        ))}
+                        {appointments.length > 0 ? (
+                          appointments.map((apt: any) => (
+                             <tr key={apt.id} className="hover:bg-gray-50/50 transition-colors">
+                                <td className="p-4">
+                                   <div className="flex items-center gap-3">
+                                      {apt.patient?.profile?.imageUrl ? (
+                                        <img src={apt.patient.profile.imageUrl} alt="" className="w-10 h-10 rounded-full" />
+                                      ) : (
+                                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary text-[10px] font-bold">
+                                          {apt.patient?.profile?.name?.charAt(0) || 'P'}
+                                        </div>
+                                      )}
+                                      <span className="font-bold text-gray-900">{apt.patient?.profile?.name} {apt.patient?.profile?.surname}</span>
+                                   </div>
+                                </td>
+                                <td className="p-4 text-sm text-gray-600">
+                                   {formatDateTime12h(apt.date)}
+                                </td>
+                                <td className="p-4 text-sm text-gray-600">{apt.type}</td>
+                                <td className="p-4">
+                                   <span className={`text-xs font-bold px-3 py-1 rounded-full uppercase ${
+                                      apt.status === 'upcoming' ? 'bg-blue-100 text-blue-700' :
+                                      apt.status === 'completed' ? 'bg-green-100 text-green-700' :
+                                      'bg-red-100 text-red-700'
+                                   }`}>
+                                      {apt.status}
+                                   </span>
+                                </td>
+                                <td className="p-4 text-right">
+                                   <button className="text-primary font-bold text-sm hover:underline">Ver Detalle</button>
+                                </td>
+                             </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan={5} className="p-12 text-center text-gray-500 font-medium">
+                              No hay citas registradas en tu histórico
+                            </td>
+                          </tr>
+                        )}
                      </tbody>
                   </table>
                </div>
             </div>
           )}
 
-          {currentView !== 'overview' && currentView !== 'appointments' && (
-            <div className="flex flex-col items-center justify-center h-[60vh] text-center">
-               <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center text-gray-300 mb-4">
-                  <Settings size={48} />
+          {currentView === 'patients' && (
+            <div className="animate-in fade-in slide-in-from-bottom-4">
+               <h2 className="text-2xl font-bold text-gray-900 mb-6">Mis Pacientes</h2>
+               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {appointments.length > 0 ? (
+                    (() => {
+                      const patientsMap = new Map();
+                      appointments.forEach((apt: any) => {
+                        if (!patientsMap.has(apt.patientId)) {
+                          patientsMap.set(apt.patientId, apt.patient);
+                        }
+                      });
+                      return Array.from(patientsMap.values()).map((patient: any) => (
+                        <div key={patient.id} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-soft flex items-center gap-4">
+                           {patient.profile?.imageUrl ? (
+                             <img src={patient.profile.imageUrl} alt="" className="w-16 h-16 rounded-full object-cover" />
+                           ) : (
+                             <div className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 font-bold text-xl font-heading">
+                               {patient.profile?.name?.charAt(0) || 'P'}
+                             </div>
+                           )}
+                           <div>
+                              <h4 className="font-bold text-gray-900">{patient.profile?.name} {patient.profile?.surname}</h4>
+                              <p className="text-sm text-gray-500">{patient.city || 'Venezuela'}</p>
+                              <button className="text-primary text-xs font-bold mt-2 hover:underline">Ver Historial</button>
+                           </div>
+                        </div>
+                      ));
+                    })()
+                  ) : (
+                    <div className="col-span-full py-20 text-center">
+                       <Users className="w-16 h-16 text-gray-200 mx-auto mb-4" />
+                       <h3 className="text-lg font-bold text-gray-900">Sin pacientes registrados</h3>
+                       <p className="text-gray-500">Tus pacientes aparecerán aquí una vez agenden su primera cita.</p>
+                    </div>
+                  )}
                </div>
-               <h3 className="text-xl font-bold text-gray-900">Sección en Construcción</h3>
-               <p className="text-gray-500 max-w-md mt-2">
-                  Estamos trabajando para habilitar el módulo de {currentView} lo antes posible.
+            </div>
+          )}
+
+          {currentView === 'chat' && (
+            <div className="h-full flex flex-col items-center justify-center py-20 animate-in fade-in">
+               <MessageSquare className="w-16 h-16 text-gray-200 mb-4" />
+               <h3 className="text-xl font-bold text-gray-900">Buzón de Mensajes</h3>
+               <p className="text-gray-500 max-w-sm text-center mt-2">
+                 Todavía no tienes conversaciones activas con tus pacientes.
                </p>
-               <Button label="Volver al Dashboard" variant="outline" className="mt-6" onClick={() => setCurrentView('overview')} />
+            </div>
+          )}
+
+          {currentView === 'earnings' && (
+            <div className="animate-in fade-in slide-in-from-bottom-4 space-y-8">
+               <h2 className="text-2xl font-bold text-gray-900">Resumen de Ingresos</h2>
+               
+               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-soft">
+                     <p className="text-gray-500 text-sm font-medium mb-1">Total Generado</p>
+                     <p className="text-3xl font-bold text-gray-900">${totalEarnings.toFixed(2)}</p>
+                  </div>
+                  <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-soft">
+                     <p className="text-gray-500 text-sm font-medium mb-1">Citas Completadas</p>
+                     <p className="text-3xl font-bold text-blue-600">{completedAppointments.length}</p>
+                  </div>
+                  <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-soft">
+                     <p className="text-gray-500 text-sm font-medium mb-1">Saldo por Retirar</p>
+                     <p className="text-3xl font-bold text-green-600">$0.00</p>
+                  </div>
+               </div>
+
+               <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+                  <div className="p-4 border-b border-gray-100">
+                     <h3 className="font-bold text-gray-900">Historial de Transacciones</h3>
+                  </div>
+                  {completedAppointments.length > 0 ? (
+                    <table className="w-full text-left">
+                       <thead className="bg-gray-50 text-gray-500 text-xs uppercase font-bold">
+                          <tr>
+                             <th className="p-4">Fecha</th>
+                             <th className="p-4">Detalle</th>
+                             <th className="p-4">Monto</th>
+                             <th className="p-4">Estado</th>
+                          </tr>
+                       </thead>
+                       <tbody className="divide-y divide-gray-100">
+                          {completedAppointments.map((apt: any) => (
+                             <tr key={apt.id}>
+                                <td className="p-4 text-sm text-gray-600">
+                                   {new Date(apt.date).toLocaleDateString()}
+                                </td>
+                                <td className="p-4">
+                                   <p className="text-sm font-bold text-gray-900">Consulta - {apt.patient?.profile?.name}</p>
+                                   <p className="text-xs text-gray-500">ID: {apt.id.split('-')[0]}</p>
+                                </td>
+                                <td className="p-4 text-sm font-bold text-green-600">
+                                   +${apt.price.toFixed(2)}
+                                </td>
+                                <td className="p-4">
+                                   <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-blue-50 text-blue-600 uppercase">Procesado</span>
+                                </td>
+                             </tr>
+                          ))}
+                       </tbody>
+                    </table>
+                  ) : (
+                    <div className="p-12 text-center text-gray-400 font-medium font-heading">
+                       No hay transacciones registradas todavía.
+                    </div>
+                  )}
+               </div>
+            </div>
+          )}
+
+          {currentView === 'settings' && (
+            <div className="animate-in fade-in duration-500">
+               <div className="mb-6">
+                  <h2 className="text-2xl font-bold text-gray-900 font-heading">Configuración del Perfil</h2>
+                  <p className="text-gray-500">Administra tu información profesional y foto de perfil.</p>
+               </div>
+               <DoctorProfileDetails userProfile={profile} onUpdate={fetchProfile} />
+            </div>
+          )}
+
+          {currentView === 'calendar' && (
+            <div className="animate-in fade-in slide-in-from-bottom-4">
+               <div className="mb-6">
+                  <h2 className="text-2xl font-bold text-gray-900 font-heading">Gestión de Agenda</h2>
+                  <p className="text-gray-500">Configura tus horarios base y slots de consulta.</p>
+               </div>
+               <ScheduleConfig 
+                 doctorId={doctorData.id} 
+                 initialAvailability={doctorData.availability}
+                 initialSlotDuration={doctorData.slotDuration}
+                 onSave={fetchProfile} 
+               />
             </div>
           )}
 

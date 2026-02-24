@@ -3,7 +3,12 @@ import prisma from '../utils/prisma.js';
 
 export const listDoctors = async (req: Request, res: Response) => {
   try {
-    const doctors = await prisma.doctor.findMany({ include: { profile: true } });
+    const doctors = await prisma.doctor.findMany({ 
+      include: { 
+        profile: true,
+        availability: true
+      } 
+    });
     res.json({ success: true, data: doctors });
   } catch (error) {
     res.status(500).json({ success: false, error: 'Error al listar médicos' });
@@ -14,7 +19,10 @@ export const detailDoctor = async (req: Request, res: Response) => {
   try {
     const doctor = await prisma.doctor.findUnique({
       where: { id: req.params.id as string },
-      include: { profile: true },
+      include: { 
+        profile: true,
+        availability: true
+      },
     });
     res.json({ success: true, data: doctor });
   } catch (error) {

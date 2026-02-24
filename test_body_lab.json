@@ -1,0 +1,9 @@
+{
+  "name": "Laboratorio Dr. Goyo V2",
+  "email": "lab-test-final-2@drgoyo.com",
+  "password": "password123",
+  "type": "Laboratorio",
+  "address": "Av. Universidad",
+  "city": "Caracas",
+  "testTypes": "Hematologia, Serologia"
+}

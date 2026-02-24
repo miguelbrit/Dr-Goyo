@@ -177,48 +177,53 @@ const App: React.FC = () => {
 
   const fetchFullProfile = async () => {
     try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      console.log('Fetching full profile...');
       const response = await fetch('/api/users/profile', {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        headers: { 'Authorization': `Bearer ${token}` }
       });
       
-      const text = await response.text();
-      try {
-        const result = JSON.parse(text);
-        if (result.success) {
-          setUserProfile(result.data);
-          const name = result.data.name || '';
-          const type = result.data.type;
-          
-          const roleMapping: Record<string, string> = {
-            'Paciente': 'patient',
-            'Medico': 'doctor',
-            'Farmacia': 'pharmacy',
-            'Laboratorio': 'lab'
-          };
-          
-          const role = roleMapping[type] || 'patient';
-          
-          setUserName(name);
-          setUserRole(role);
-          
-          // Persistence in Storage
-          localStorage.setItem('user_role', role);
-          localStorage.setItem('user_name', name);
-
-          // If we are still on splash or welcome, go to the right dashboard
-          if (currentScreen === 'splash' || currentScreen === 'welcome' || currentScreen === 'login') {
-            const screen = role === 'patient' ? 'home' : `${role}_dashboard` as ScreenState;
-            setCurrentScreen(screen);
-          }
-        } else {
-          // Token might be invalid or expired
+      if (!response.ok) {
+        console.warn(`Profile fetch failed with status: ${response.status}`);
+        // Only logout if it's a 401 and we are not expecting it
+        if (response.status === 401 && (currentScreen === 'splash')) {
           handleLogout();
         }
-      } catch (e) {
-        console.error('Error parsing profile JSON:', text);
+        return;
+      }
+
+      const result = await response.json();
+      if (result.success) {
+        setUserProfile(result.data);
+        const name = result.data.name || '';
+        const type = result.data.type;
+        
+        const roleMapping: Record<string, string> = {
+          'Paciente': 'patient',
+          'Medico': 'doctor',
+          'Farmacia': 'pharmacy',
+          'Laboratorio': 'lab'
+        };
+        
+        const role = roleMapping[type] || 'patient';
+        
+        setUserName(name);
+        setUserRole(role);
+        
+        localStorage.setItem('user_role', role);
+        localStorage.setItem('user_name', name);
+
+        if (currentScreen === 'splash' || currentScreen === 'welcome' || (currentScreen === 'login' && !roleMapping[type])) {
+          const screen = role === 'patient' ? 'home' : `${role}_dashboard` as ScreenState;
+          setCurrentScreen(screen);
+        }
+      } else {
+        console.error('Profile result success false:', result);
       }
     } catch (err) {
-      console.error("Error fetching full profile:", err);
+      console.error("Critical error in fetchFullProfile:", err);
     }
   };
 
@@ -274,7 +279,7 @@ const App: React.FC = () => {
 
   // --- Internal Admin Auth ---
   const handleAdminLoginSuccess = () => {
-    // In a real app, validation happens on server.
+    // Master Access granted
     setAdminSession({ role: 'master', email: 'master@drgoyo.com' });
     setCurrentScreen('admin_dashboard');
   };
@@ -452,7 +457,12 @@ const App: React.FC = () => {
             currentRole={userRole || ''} 
             onRedirect={() => setCurrentScreen('login')}
           >
-            <DoctorDashboardScreen onLogout={handleLogout} userName={userName} userProfile={userProfile} />
+            <DoctorDashboardScreen 
+              onLogout={handleLogout} 
+              userName={userName} 
+              userProfile={userProfile} 
+              onProfileUpdate={fetchFullProfile}
+            />
           </ProtectedRoute>
         );
 

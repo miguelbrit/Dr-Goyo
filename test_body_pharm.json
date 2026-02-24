@@ -1,0 +1,9 @@
+{
+  "name": "Farmacia Goyo Central",
+  "email": "pharm-test@drgoyo.com",
+  "password": "password123",
+  "type": "Farmacia",
+  "address": "Calle 5, Caracas",
+  "city": "Caracas",
+  "hasDelivery": true
+}

@@ -22,7 +22,7 @@ export const Avatar: React.FC<AvatarProps> = ({ src, alt, size = 'md', status })
           <img src={src} alt={alt} className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-accent text-primary font-bold">
-            {alt.charAt(0).toUpperCase()}
+            {alt && alt.length > 0 ? alt.charAt(0).toUpperCase() : '?'}
           </div>
         )}
       </div>

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { MapPin, Send, Pill, Activity, ClipboardCheck, Mic } from 'lucide-react';
 import { Avatar } from '../components/Avatar';
 import { Carousel, CarouselItem } from '../components/Carousel';
+import { InterestCarousel } from '../components/InterestCarousel';
 import { BottomNav } from '../components/BottomNav';
 import { Sidebar } from '../components/Sidebar';
 import { SuggestedArticles } from '../components/SuggestedArticles';
@@ -174,7 +175,27 @@ export const PatientHomeScreen: React.FC<PatientHomeScreenProps> = ({
           />
         </section>
 
-        {/* "Te puede Interesar" Grid */}
+        {/* "Te puede Interesar" - Versión Experimental Glassmorphism */}
+        <section>
+          <div className="flex items-center justify-between mb-2 px-6">
+            <h2 className="font-heading font-extrabold text-cyan-900 dark:text-white text-xl tracking-tight">Servicios Médicos</h2>
+            <div className="flex gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+              <span className="text-[10px] font-bold text-cyan-500 uppercase tracking-widest">Premium</span>
+            </div>
+          </div>
+          
+          <div className="mt-1">
+            <InterestCarousel 
+              onNavigateToMedicines={onNavigateToMedicines}
+              onNavigateToPathologies={onNavigateToPathologies}
+              onNavigateToPreOp={onNavigateToPreOp}
+            />
+          </div>
+        </section>
+
+        {/* 
+        DISEÑO ANTERIOR (ROLLBACK) - Grid de botones verticales
         <section>
           <h2 className="font-heading font-semibold text-text-main mb-3 text-lg">Te puede Interesar</h2>
           <div className="grid grid-cols-1 gap-3">
@@ -195,6 +216,7 @@ export const PatientHomeScreen: React.FC<PatientHomeScreenProps> = ({
             ))}
           </div>
         </section>
+        */}
 
         {/* Recommended Readings Section */}
         <section className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">

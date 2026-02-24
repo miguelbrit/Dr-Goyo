@@ -108,7 +108,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       />
 
       {/* Panel */}
-      <div className={`fixed top-0 right-0 h-full w-full md:w-[400px] bg-neutral z-50 shadow-2xl transition-transform duration-300 transform ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+      <div className={`fixed top-0 right-0 h-full w-full md:w-[400px] bg-white/80 dark:bg-black/80 backdrop-blur-xl z-50 border-l border-white/20 shadow-2xl transition-transform duration-300 transform ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
         <div className="p-6 flex flex-col h-full overflow-y-auto">
           <div className="flex justify-between items-center mb-6">
             <div className="flex items-center gap-2">

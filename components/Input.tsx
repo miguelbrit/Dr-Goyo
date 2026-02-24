@@ -14,20 +14,24 @@ export const Input: React.FC<InputProps> = ({ label, error, icon, className = ''
           {label}
         </label>
       )}
-      <div className="relative">
+      <div className="relative group">
         <input
           className={`
-            w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-text
-            placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary
-            transition-all duration-200
-            ${icon ? 'pl-11' : ''}
-            ${error ? 'border-red-500 focus:ring-red-200' : ''}
+            w-full px-5 py-4 rounded-2xl border-none 
+            bg-gray-bg text-text-main
+            placeholder:text-gray-light
+            shadow-neo-elevated
+            focus:shadow-neo-sunken
+            focus:outline-none 
+            transition-all duration-300 ease-out
+            ${icon ? 'pl-12' : ''}
+            ${error ? 'ring-1 ring-red-500/30' : ''}
             ${className}
           `}
           {...props}
         />
         {icon && (
-          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-light group-focus-within:text-primary transition-colors">
             {icon}
           </div>
         )}

@@ -7,7 +7,7 @@ export const register = async (req: Request, res: Response) => {
   const { 
     name, surname, email, password, type, 
     phone, birthDate, gender, weight, height,
-    specialty, license, city, experienceYears, consultationPrice, insuranceAffiliations, 
+    specialty, license, city, experienceYears, consultationPrice, insuranceAffiliations, bio,
     address, openingHours, closingHours, hasDelivery, testTypes 
   } = req.body;
 
@@ -28,12 +28,13 @@ export const register = async (req: Request, res: Response) => {
     const authId = authData.user.id;
 
     // 2. Create Profile in public schema
-    const profile = await prisma.profile.create({
+    const profile = await (prisma.profile as any).create({
       data: {
         id: authId,
+        email: normalizedEmail,
         name,
         surname,
-        type,
+        type: type, // Ensure this matches UserType enum
       },
     });
 
@@ -49,28 +50,31 @@ export const register = async (req: Request, res: Response) => {
             weight: weight ? parseFloat(weight.toString()) : undefined,
             height: height ? parseFloat(height.toString()) : undefined,
             city,
+            address,
           }
         });
         break;
       case 'Medico':
-        await prisma.doctor.create({ 
+        await (prisma.doctor as any).create({ 
           data: { 
             profileId: authId,
-            name,
             specialty,
             license,
             city,
-            experienceYears: experienceYears ? parseInt(experienceYears) : undefined,
-            consultationPrice: consultationPrice ? parseFloat(consultationPrice) : undefined,
-            insuranceAffiliations
+            address,
+            experienceYears: experienceYears ? parseInt(experienceYears.toString()) : undefined,
+            consultationPrice: consultationPrice ? parseFloat(consultationPrice.toString()) : undefined,
+            insuranceAffiliations,
+            bio,
+            status: 'PENDING'
           } 
         });
         break;
       case 'Farmacia':
-        await prisma.pharmacy.create({ 
+        await (prisma.pharmacy as any).create({ 
           data: { 
             profileId: authId,
-            name,
+            businessName: name, // Usamos el nombre como BusinessName
             address,
             city,
             openingHours,
@@ -80,10 +84,10 @@ export const register = async (req: Request, res: Response) => {
         });
         break;
       case 'Laboratorio':
-        await prisma.laboratory.create({ 
+        await (prisma.laboratory as any).create({ 
           data: { 
             profileId: authId,
-            name,
+            businessName: name,
             address,
             city,
             testTypes,
@@ -183,7 +187,23 @@ export const getProfile = async (req: AuthRequest, res: Response) => {
       where: { id: req.user?.id },
       include: {
         patient: true,
-        doctor: true,
+        doctor: {
+          include: {
+            availability: true,
+            appointments: {
+              include: {
+                patient: {
+                  include: {
+                    profile: true
+                  }
+                }
+              },
+              orderBy: {
+                date: 'asc'
+              }
+            }
+          }
+        },
         pharmacy: true,
         laboratory: true,
       },
@@ -214,16 +234,17 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
     }
 
     // 1. Update Profile table
+    const updateData: any = {};
+    if (name) updateData.name = name;
+    if (surname !== undefined) updateData.surname = surname;
+    if (imageUrl !== undefined) updateData.imageUrl = imageUrl;
+    if (weight) updateData.weight = parseFloat(weight.toString());
+    if (height) updateData.height = parseFloat(height.toString());
+    if (healthStatus !== undefined) updateData.healthStatus = healthStatus;
+
     const updatedProfile = await prisma.profile.update({
       where: { id: userId },
-      data: {
-        name,
-        surname,
-        imageUrl,
-        weight: weight ? parseFloat(weight.toString()) : undefined,
-        height: height ? parseFloat(height.toString()) : undefined,
-        healthStatus,
-      }
+      data: updateData
     });
 
     // 2. Update specific entity profile if needed
@@ -256,6 +277,82 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
           allergies,
         }
       });
+    } else if (updatedProfile.type === 'Medico') {
+      const { 
+        specialty, license, experienceYears, consultationPrice, bio, 
+        city, address, insuranceAffiliations, availability,
+        identityDocUrl, professionalTitleUrl, slotDuration
+      } = req.body;
+      
+      const doctor = await (prisma.doctor as any).findUnique({
+        where: { profileId: userId }
+      });
+
+      if (doctor) {
+        await (prisma.doctor as any).update({
+          where: { id: doctor.id },
+          data: {
+            specialty,
+            license,
+            bio,
+            city,
+            address,
+            insuranceAffiliations,
+            identityDocUrl,
+            professionalTitleUrl,
+            slotDuration: slotDuration ? parseInt(slotDuration.toString()) : undefined,
+            experienceYears: experienceYears ? parseInt(experienceYears.toString()) : undefined,
+            consultationPrice: consultationPrice ? parseFloat(consultationPrice.toString()) : undefined
+          }
+        });
+
+        // Update Availability if provided
+        if (availability && Array.isArray(availability)) {
+          // Delete old availability for this doctor
+          await (prisma as any).availability.deleteMany({
+            where: { doctorId: doctor.id }
+          });
+
+          // Create new ones
+          if (availability.length > 0) {
+            await (prisma as any).availability.createMany({
+              data: availability.map((a: any) => ({
+                doctorId: doctor.id,
+                dayOfWeek: a.dayOfWeek,
+                startTime: a.startTime,
+                endTime: a.endTime,
+                isActive: a.isActive ?? true
+              }))
+            });
+          }
+        }
+      }
+    } else if (updatedProfile.type === 'Farmacia') {
+      const { businessName, address, city, openingHours, closingHours, hasDelivery } = req.body;
+      await (prisma.pharmacy as any).update({
+        where: { profileId: userId },
+        data: {
+          businessName: businessName || name,
+          address,
+          city,
+          openingHours,
+          closingHours,
+          hasDelivery: hasDelivery !== undefined ? (hasDelivery === true || hasDelivery === 'true') : undefined
+        }
+      });
+    } else if (updatedProfile.type === 'Laboratorio') {
+      const { businessName, address, city, testTypes, openingHours, closingHours } = req.body;
+      await (prisma.laboratory as any).update({
+        where: { profileId: userId },
+        data: {
+          businessName: businessName || name,
+          address,
+          city,
+          testTypes,
+          openingHours,
+          closingHours
+        }
+      });
     }
 
     const fullProfile = await prisma.profile.findUnique({
@@ -274,7 +371,11 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
       data: fullProfile
     });
   } catch (error: any) {
-    console.error('Update Profile Error:', error);
+    console.error('Update Profile Error Details:', {
+      message: error.message,
+      code: error.code,
+      meta: error.meta
+    });
     res.status(500).json({ 
       success: false, 
       error: 'Error al actualizar perfil',
@@ -291,8 +392,9 @@ export const forgotPassword = async (req: Request, res: Response) => {
     const normalizedEmail = email.toLowerCase().trim();
 
     // Send reset password email via Supabase
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
     const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
-      redirectTo: 'http://localhost:3000/reset-password', 
+      redirectTo: `${frontendUrl}/reset-password`, 
     });
 
     if (error) throw error;

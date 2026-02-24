@@ -11,10 +11,18 @@ enum UserType {
   Medico
   Farmacia
   Laboratorio
+  Admin
+}
+
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
 }
 
 model Profile {
   id           String    @id
+  email        String    @unique
   name         String
   surname      String?
   type         UserType  @default(Paciente)
@@ -23,20 +31,22 @@ model Profile {
   height       Float?
   healthStatus String?   @map("health_status")
   createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
 
-  // Profiles
+  // Relationships
   patient      Patient?
   doctor       Doctor?
   pharmacy     Pharmacy?
   laboratory   Laboratory?
   
-  // Articles
-  articles      Article[]
+  articles     Article[]
+  sentMessages ChatMessage[] @relation("SentMessages")
+  receivedMessages ChatMessage[] @relation("ReceivedMessages")
 }
 
 model Patient {
   id          String   @id @default(uuid())
-  profile     Profile  @relation(fields: [profileId], references: [id])
+  profile     Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
   profileId   String   @unique @map("profile_id")
   birthDate   DateTime?
   gender      String?
@@ -45,61 +55,110 @@ model Patient {
   phone       String?
   address     String?
   city        String?
-  country     String?
+  country     String?  @default("Venezuela")
   bloodType   String?
   allergies   String?
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  appointments Appointment[]
 }
 
 model Doctor {
-  id                   String   @id @default(uuid())
-  profile              Profile  @relation(fields: [profileId], references: [id])
-  profileId            String   @unique @map("profile_id")
-  name                 String?
+  id                   String             @id @default(uuid())
+  profile              Profile            @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  profileId            String             @unique @map("profile_id")
   specialty            String?
   license              String?
-  description          String?
-  address              String?
-  city                 String?
-  experienceYears      Int?
-  consultationPrice    Float?
+  bio                  String?            @db.Text
+  experienceYears      Int?               @default(0)
+  consultationPrice    Float?             @default(0)
   insuranceAffiliations String?
-  imageUrl             String?
+  city                 String?
+  address              String?
+  status               VerificationStatus @default(PENDING)
+  identityDocUrl       String?            @map("identity_doc_url")
+  professionalTitleUrl String?            @map("professional_title_url")
+  slotDuration         Int?               @default(30) @map("slot_duration")
+  availability         Availability[]
+  appointments         Appointment[]
+}
+
+model Availability {
+  id        String  @id @default(uuid())
+  doctor    Doctor  @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  doctorId  String  @map("doctor_id")
+  dayOfWeek Int     // 0 (Dom), 1 (Lun), ..., 6 (Sab)
+  startTime String? // "08:00"
+  endTime   String? // "17:00"
+  isActive  Boolean @default(true)
+
+  @@unique([doctorId, dayOfWeek])
 }
 
 model Pharmacy {
   id           String   @id @default(uuid())
-  profile      Profile  @relation(fields: [profileId], references: [id])
+  profile      Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
   profileId    String   @unique @map("profile_id")
-  name         String?
+  businessName String?  @map("business_name")
+  description  String?  @db.Text
   address      String?
   city         String?
-  description  String?
   openingHours String?
   closingHours String?
   hasDelivery  Boolean? @default(false)
-  imageUrl     String?
+  status       VerificationStatus @default(PENDING)
 }
 
 model Laboratory {
   id           String   @id @default(uuid())
-  profile      Profile  @relation(fields: [profileId], references: [id])
+  profile      Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
   profileId    String   @unique @map("profile_id")
-  name         String?
-  testTypes    String?
+  businessName String?  @map("business_name")
+  testTypes    String?  @db.Text
+  description  String?  @db.Text
   address      String?
   city         String?
-  description  String?
   openingHours String?
   closingHours String?
-  imageUrl     String?
+  status       VerificationStatus @default(PENDING)
 }
 
 model Article {
   id          String   @id @default(uuid())
   title       String
-  content     String
-  type        UserType // Medico, Farmacia, Laboratorio
+  subtitle    String?
+  content     String   @db.Text
+  image       String?
+  category    String?
+  type        UserType 
   author      Profile  @relation(fields: [authorId], references: [id])
   authorId    String
+  views       Int      @default(0)
+  status      String   @default("draft")
   publishDate DateTime @default(now())
+}
+
+model Appointment {
+  id        String   @id @default(uuid())
+  doctor    Doctor   @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  doctorId  String   @map("doctor_id")
+  patient   Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  patientId String   @map("patient_id")
+  date      DateTime @db.Timestamptz
+  status    String   @default("upcoming") // upcoming, completed, cancelled
+  price     Float    @default(0)
+  type      String   @default("Consulta General")
+  notes     String?  @db.Text
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+}
+
+model ChatMessage {
+  id         String   @id @default(uuid())
+  sender     Profile  @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  senderId   String   @map("sender_id")
+  receiver   Profile  @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+  receiverId String   @map("receiver_id")
+  content    String   @db.Text
+  isRead     Boolean  @default(false) @map("is_read")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
 }

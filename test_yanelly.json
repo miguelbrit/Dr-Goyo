@@ -1,0 +1,13 @@
+{
+  "name": "Yanelly",
+  "surname": "Alvarez",
+  "email": "yanellyalvarez.test@gmail.com",
+  "password": "caracas123456",
+  "type": "Medico",
+  "specialty": "Ginecología",
+  "city": "Caracas",
+  "license": "V-12345678",
+  "experienceYears": 10,
+  "consultationPrice": 50,
+  "address": "Consultorio Caracas Central"
+}

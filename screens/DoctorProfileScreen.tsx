@@ -1,9 +1,12 @@
-import React from 'react';
-import { ChevronLeft, MessageCircle, MapPin, Award, Users, Star } from 'lucide-react';
+import React, { useState } from 'react';
+import { 
+  ChevronLeft, MessageCircle, MapPin, Award, Users, Star, 
+  CheckCircle2, Loader2, AlertCircle 
+} from 'lucide-react';
 import { Doctor } from '../types';
-import { Calendar } from '../components/Calendar';
 import { Button } from '../components/Button';
 import { BottomNav } from '../components/BottomNav';
+import { BookingModule } from '../components/BookingModule';
 
 interface DoctorProfileScreenProps {
   doctor: Doctor;
@@ -18,108 +21,178 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
   onChat,
   onNavigate 
 }) => {
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [selectedTime, setSelectedTime] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSlotSelect = (date: Date, time: string) => {
+    setSelectedDate(date);
+    setSelectedTime(time);
+    setError(null);
+  };
+
+  const handleBooking = async () => {
+    if (!selectedTime) return;
+
+    setLoading(true);
+    setError(null);
+
+    const appointmentDate = new Date(selectedDate);
+    const [h, m] = selectedTime.split(':').map(Number);
+    appointmentDate.setHours(h, m, 0, 0);
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/appointments/book', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          doctorId: doctor.id,
+          date: appointmentDate.toISOString(),
+          price: doctor.consultationPrice || doctor.price,
+          type: 'Consulta Médica'
+        })
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        setSuccess(true);
+        // Refresh or Navigate after success if needed
+      } else {
+        setError(result.error || "Error al agendar la cita");
+      }
+    } catch (err) {
+      setError("Error de conexión con el servidor");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (success) {
+    return (
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center p-8 text-center animate-in fade-in duration-500">
+        <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center text-green-600 mb-8 animate-bounce">
+          <CheckCircle2 size={56} />
+        </div>
+        <h2 className="text-3xl font-bold text-gray-900 mb-4 font-heading">¡Cita Confirmada!</h2>
+        <p className="text-gray-500 mb-10 max-w-xs mx-auto">
+          Tu cita con el {doctor.name} ha sido registrada. Puedes ver los detalles en tu perfil.
+        </p>
+        <Button label="Volver al Inicio" variant="primary" fullWidth onClick={onBack} className="max-w-xs" />
+      </div>
+    );
+  }
+
   return (
-    // Increased padding-bottom to pb-48 (192px) to account for BottomNav (64px) + Fixed Action Bar (~90px) + Safe Area
     <div className="min-h-screen bg-gray-bg pb-48 transition-colors duration-300">
       {/* Header Image Area */}
-      <div className="relative h-48 bg-secondary">
+      <div className="relative h-56 bg-secondary">
          <img 
-            src="https://images.unsplash.com/photo-1551076805-e1869033e561?auto=format&fit=crop&q=80&w=1000" 
-            alt="Office" 
-            className="w-full h-full object-cover opacity-30"
+            src="https://images.unsplash.com/photo-1576091160550-2173bdb999ef?auto=format&fit=crop&q=80&w=1000" 
+            alt="Medical Office" 
+            className="w-full h-full object-cover opacity-40"
          />
-         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-neutral/90"></div>
+         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-gray-bg"></div>
          
          <button 
             onClick={onBack}
-            className="absolute top-4 left-4 bg-card/90 p-2 rounded-full shadow-sm text-text-main z-10 hover:bg-card transition-colors"
+            className="absolute top-6 left-6 bg-white/90 p-2.5 rounded-full shadow-md text-gray-900 z-10 hover:bg-white transition-all transform hover:scale-110 active:scale-95"
          >
             <ChevronLeft size={24} />
          </button>
       </div>
 
       {/* Profile Info Overlay */}
-      <div className="px-6 -mt-12 relative z-10">
+      <div className="px-6 -mt-20 relative z-10 max-w-xl mx-auto">
          <div className="flex justify-between items-end">
-            <div className="w-24 h-24 rounded-2xl border-4 border-card shadow-lg overflow-hidden bg-card">
+            <div className="w-28 h-28 rounded-[2rem] border-4 border-white shadow-xl overflow-hidden bg-white ring-8 ring-primary/5">
                <img src={doctor.image} alt={doctor.name} className="w-full h-full object-cover" />
             </div>
-            <div className="mb-2">
-               <span className="bg-primary/10 text-primary font-bold text-xs px-3 py-1 rounded-full border border-primary/20">
+            <div className="mb-4">
+               <span className="bg-primary text-white font-bold text-xs px-4 py-1.5 rounded-full shadow-lg shadow-primary/20">
                   {doctor.specialty}
                </span>
             </div>
          </div>
          
-         <div className="mt-4">
-            <h1 className="font-heading text-2xl font-bold text-text-main">{doctor.name}</h1>
-            <div className="flex items-center gap-2 mt-1">
-               <MapPin size={16} className="text-gray-light" />
-               <span className="text-gray-text text-sm">{doctor.location} • {doctor.distance}</span>
+         <div className="mt-6">
+            <h1 className="font-heading text-3xl font-bold text-gray-900 tracking-tight">{doctor.name}</h1>
+            <div className="flex items-center gap-2 mt-2">
+               <MapPin size={18} className="text-primary" />
+               <span className="text-gray-500 font-medium text-sm">{doctor.location} • {doctor.distance}</span>
             </div>
          </div>
 
-         {/* Stats */}
-         <div className="grid grid-cols-3 gap-4 mt-6">
-            <div className="bg-card p-3 rounded-2xl text-center shadow-sm">
-               <div className="flex justify-center text-blue-500 mb-1"><Users size={20} /></div>
-               <span className="block font-bold text-text-main">{doctor.patients}+</span>
-               <span className="text-xs text-gray-light">Pacientes</span>
+         {/* Stats Cards */}
+         <div className="grid grid-cols-3 gap-4 mt-8">
+            <div className="bg-white p-4 rounded-3xl text-center shadow-soft border border-white/50">
+               <Users size={20} className="mx-auto text-blue-500 mb-2" />
+               <span className="block font-bold text-gray-900">{doctor.patients}+</span>
+               <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Pacientes</span>
             </div>
-            <div className="bg-card p-3 rounded-2xl text-center shadow-sm">
-               <div className="flex justify-center text-yellow-500 mb-1"><Star size={20} /></div>
-               <span className="block font-bold text-text-main">{doctor.rating}</span>
-               <span className="text-xs text-gray-light">Rating</span>
+            <div className="bg-white p-4 rounded-3xl text-center shadow-soft border border-white/50">
+               <Star size={20} className="mx-auto text-yellow-500 mb-2" />
+               <span className="block font-bold text-gray-900">{doctor.rating}</span>
+               <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Rating</span>
             </div>
-            <div className="bg-card p-3 rounded-2xl text-center shadow-sm">
-               <div className="flex justify-center text-purple-500 mb-1"><Award size={20} /></div>
-               <span className="block font-bold text-text-main">{doctor.experience} Años</span>
-               <span className="text-xs text-gray-light">Exp.</span>
+            <div className="bg-white p-4 rounded-3xl text-center shadow-soft border border-white/50">
+               <Award size={20} className="mx-auto text-purple-500 mb-2" />
+               <span className="block font-bold text-gray-900">{doctor.experience} Años</span>
+               <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Exp.</span>
             </div>
          </div>
 
-         {/* Bio */}
-         <div className="mt-8">
-            <h3 className="font-heading font-bold text-lg text-text-main mb-2">Biografía</h3>
-            <p className="text-gray-text text-sm leading-relaxed">
+         {/* Bio Section */}
+         <div className="mt-10">
+            <h3 className="font-heading font-bold text-xl text-gray-900 mb-3 flex items-center gap-2">
+               Sobre el médico
+            </h3>
+            <p className="text-gray-600 text-sm leading-relaxed font-medium">
                {doctor.about}
             </p>
          </div>
 
-         {/* Mini Map */}
-         <div className="mt-8">
-            <h3 className="font-heading font-bold text-lg text-text-main mb-2">Ubicación</h3>
-            <div className="h-32 bg-gray-bg rounded-xl overflow-hidden relative border border-border-main">
-               <div className="absolute inset-0 flex items-center justify-center bg-gray-bg/50">
-                  <span className="text-gray-light text-xs font-medium">Mapa de Google simulado</span>
-                  <MapPin size={32} className="text-secondary absolute drop-shadow-md" />
-               </div>
-            </div>
-         </div>
+         {/* NEW MODULE: Booking System */}
+         <BookingModule 
+           doctorId={doctor.id}
+           doctorPrice={doctor.consultationPrice || doctor.price}
+           onSlotSelect={handleSlotSelect}
+           selectedDate={selectedDate}
+           selectedTime={selectedTime}
+         />
 
-         {/* Calendar */}
-         <div className="mt-8 mb-4">
-            <h3 className="font-heading font-bold text-lg text-text-main mb-2">Disponibilidad</h3>
-            <div className="bg-card rounded-2xl p-4 shadow-soft border border-border-main overflow-hidden">
-               <Calendar />
+         {error && (
+            <div className="mt-6 p-4 bg-red-50 border border-red-100 rounded-2xl flex items-center gap-3 text-red-600 animate-in slide-in-from-bottom-2">
+               <AlertCircle size={20} />
+               <p className="text-sm font-semibold">{error}</p>
             </div>
-         </div>
+         )}
       </div>
 
-      {/* Floating Action Bar - Shifted up to sit on top of BottomNav */}
-      <div className="fixed bottom-[64px] left-0 w-full bg-card border-t border-border-main p-4 shadow-[0_-4px_20px_rgba(0,0,0,0.1)] z-40 transition-colors">
-         <div className="flex gap-4 max-w-md mx-auto">
+      {/* Floating Action Bar */}
+      <div className="fixed bottom-[74px] left-0 w-full p-6 z-40">
+         <div className="max-w-md mx-auto flex gap-4">
             <button 
                onClick={onChat}
-               className="p-4 rounded-xl border-2 border-primary/20 text-primary hover:bg-primary/5 transition-colors"
+               className="w-16 h-16 rounded-2xl bg-white border-2 border-primary/10 text-primary flex items-center justify-center shadow-lg hover:bg-primary/5 transition-all"
             >
-               <MessageCircle size={24} />
+               <MessageCircle size={28} />
             </button>
             <Button 
-               label={`Agendar Cita - $${doctor.price}`} 
+               label={loading ? "Procesando..." : selectedTime ? `Confirmar para ${selectedTime}` : "Selecciona un horario"} 
                variant="primary" 
                fullWidth 
-               className="shadow-lg shadow-primary/25"
+               disabled={!selectedTime || loading}
+               onClick={handleBooking}
+               icon={loading ? Loader2 : CheckCircle2}
+               className={`h-16 rounded-2xl text-lg shadow-2xl transition-all ${
+                 selectedTime ? 'shadow-primary/40' : 'opacity-80 grayscale'
+               }`}
             />
          </div>
       </div>

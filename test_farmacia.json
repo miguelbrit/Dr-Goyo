@@ -1,0 +1,9 @@
+{
+  "name": "Farmacia Goyo Salud",
+  "email": "contacto@farmaciagoyo.com",
+  "password": "farmacia123456",
+  "type": "Farmacia",
+  "address": "Calle principal 123",
+  "city": "Caracas",
+  "hasDelivery": true
+}

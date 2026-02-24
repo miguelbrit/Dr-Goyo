@@ -191,26 +191,29 @@ export const DoctorListScreen: React.FC<DoctorListScreenProps> = ({
         // Map backend entities to frontend Doctor type
         const mappedDoctors = result.data.map((d: any) => ({
           id: d.id,
-          name: d.profile?.name || d.name,
+          name: `${d.profile?.name || ''} ${d.profile?.surname || ''}`.trim() || 'Médico',
           specialty: d.specialty || 'General',
-          location: d.city || 'Venezuela',
-          distance: 'A consultoría',
-          rating: 4.5, // Placeholder
+          location: d.city || d.profile?.city || 'Venezuela',
+          distance: d.address ? 'Presencial' : 'Telemedicina',
+          rating: 5.0, // Default for new doctors
           reviews: 0,
           price: d.consultationPrice || 0,
           image: d.profile?.imageUrl || 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&q=80&w=300&h=300',
-          nextAvailable: 'Consultar disponibilidad',
-          about: `Especialista con ${d.experienceYears || 0} años de experiencia.`,
-          experience: d.experienceYears,
-          patients: 0
+          nextAvailable: d.status === 'VERIFIED' ? 'Disponible' : 'En Verificación',
+          about: d.bio || `Especialista con ${d.experienceYears || 0} años de experiencia en ${d.specialty || 'medicina'}.`,
+          experience: d.experienceYears || 0,
+          patients: 0,
+          isFeatured: d.status === 'VERIFIED',
+          availability: d.availability || []
         }));
-        setDoctors(mappedDoctors.length > 0 ? mappedDoctors : DOCTORS_DATA);
+        // Show only real ones
+        setDoctors(mappedDoctors);
       } else {
-        setDoctors(DOCTORS_DATA);
+        setDoctors([]);
       }
     } catch (err) {
       console.error("Error fetching doctors:", err);
-      setDoctors(DOCTORS_DATA);
+      setDoctors([]);
     } finally {
       setLoading(false);
     }

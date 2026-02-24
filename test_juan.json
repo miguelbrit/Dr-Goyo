@@ -1,0 +1,10 @@
+{
+  "name": "Juan",
+  "surname": "Contreras",
+  "email": "juan@gmail.com",
+  "password": "12345678",
+  "type": "Paciente",
+  "city": "Caracas",
+  "gender": "Hombre",
+  "birthDate": "1981-01-01"
+}

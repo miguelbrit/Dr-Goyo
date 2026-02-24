@@ -257,12 +257,12 @@ export const ProfileDetails: React.FC<ProfileDetailsProps> = ({ userProfile, onU
                     icon={<Activity size={18} />} 
                 />
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5 font-sans">Género</label>
+                  <label className="block text-sm font-bold text-gray-text mb-2 px-1">Género</label>
                   <select 
                     name="gender"
                     value={formData.gender}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-text focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm"
+                    className="w-full px-5 py-4 rounded-2xl border-none bg-gray-bg text-text-main shadow-neo-elevated focus:shadow-neo-sunken focus:outline-none transition-all duration-300 text-sm appearance-none"
                   >
                     <option value="">Selecciona...</option>
                     <option value="Masculino">Masculino</option>
@@ -304,12 +304,12 @@ export const ProfileDetails: React.FC<ProfileDetailsProps> = ({ userProfile, onU
                 icon={<Weight size={18} />} 
               />
               <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5 font-sans">Grupo Sanguíneo</label>
+                  <label className="block text-sm font-bold text-gray-text mb-2 px-1">Grupo Sanguíneo</label>
                   <select 
                     name="bloodType"
                     value={formData.bloodType}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-text focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm"
+                    className="w-full px-5 py-4 rounded-2xl border-none bg-gray-bg text-text-main shadow-neo-elevated focus:shadow-neo-sunken focus:outline-none transition-all duration-300 text-sm appearance-none"
                   >
                     <option value="">--</option>
                     <option value="O+">O+</option>

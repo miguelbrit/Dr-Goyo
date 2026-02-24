@@ -7,29 +7,92 @@ interface AdminLoginScreenProps {
   onBackToPublic: () => void;
 }
 
+import { supabase } from '../supabase';
+
 export const AdminLoginScreen: React.FC<AdminLoginScreenProps> = ({ onLoginSuccess, onBackToPublic }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
-    // Simulate Server-Side Validation & RBAC (Role Based Access Control)
-    setTimeout(() => {
-      if (email === 'master@drgoyo.com' && password === 'admin123') {
-        // Success: Role is Master
-        setLoading(false);
-        onLoginSuccess();
-      } else {
-        // Fail
-        setLoading(false);
-        setError('Credenciales inválidas o acceso denegado.');
+    try {
+      const cleanEmail = email.trim();
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email: cleanEmail,
+        password
+      });
+
+      if (authError) {
+        console.error("Auth Error:", authError);
+        throw authError;
       }
-    }, 1500);
+
+      const user = data.user;
+      console.log("LOGIN SUCCESS! Full User Data:", {
+        id: user?.id,
+        email: user?.email,
+        metadata: user?.user_metadata
+      });
+
+      // Check if user is actually an Admin in Profile table
+      // Try by ID first
+      let { data: profile, error: profileError } = await supabase
+        .from('Profile')
+        .select('*')
+        .eq('id', user?.id)
+        .single();
+
+      if (profileError) {
+        console.error("Profile check by ID ERROR:", JSON.stringify(profileError));
+      }
+
+      // Fallback: If ID fails, try by email
+      if (profileError || !profile) {
+        console.warn("Retrying by email...");
+        const { data: profileByEmail, error: emailError } = await supabase
+          .from('Profile')
+          .select('*')
+          .eq('email', cleanEmail)
+          .single();
+        
+        if (profileByEmail) {
+          profile = profileByEmail;
+          profileError = null;
+        } else {
+          console.error("Profile check by email ERROR:", JSON.stringify(emailError));
+        }
+      }
+
+      // Ensure session is stored for all successful logins
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        localStorage.setItem('token', session.access_token);
+      }
+
+      // EXTREME TEMPORARY BYPASS FOR MASTER ADMIN
+      if (cleanEmail.toLowerCase() === 'miguelbrit@gmail.com') {
+        onLoginSuccess();
+        return;
+      }
+
+      const userType = profile?.type;
+      console.log("Resolved User Type:", userType);
+
+      if (profileError || String(userType).toLowerCase() !== 'admin') {
+        throw new Error("Acceso denegado. No tienes permisos de administrador.");
+      }
+
+      onLoginSuccess();
+    } catch (err: any) {
+      setError(err.message || 'Error al iniciar sesión');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

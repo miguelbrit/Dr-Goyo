@@ -47,6 +47,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ role, onBack, on
   // Step 3: Localization & Visibility
   const [city, setCity] = useState('');
   const [address, setAddress] = useState('');
+  const [bio, setBio] = useState('');
   const [openingHours, setOpeningHours] = useState('');
   const [closingHours, setClosingHours] = useState('');
   const [hasDelivery, setHasDelivery] = useState(false);
@@ -92,9 +93,10 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ role, onBack, on
           // Doctor
           specialty: role === 'doctor' ? specialty : undefined,
           license: role === 'doctor' ? license : undefined,
-          experienceYears: role === 'doctor' ? experienceYears : undefined,
-          consultationPrice: role === 'doctor' ? consultationPrice : undefined,
+          experienceYears: role === 'doctor' ? parseInt(experienceYears) || 0 : undefined,
+          consultationPrice: role === 'doctor' ? parseFloat(consultationPrice) || 0 : undefined,
           insuranceAffiliations: role === 'doctor' ? insuranceAffiliations : undefined,
+          bio: role === 'doctor' ? bio : undefined,
           // All Profile
           city,
           address,
@@ -316,6 +318,15 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ role, onBack, on
                     icon={<FileText size={18} />}
                     value={insuranceAffiliations}
                     onChange={(e) => setInsuranceAffiliations(e.target.value)}
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-sm font-bold text-gray-text mb-2">Breve Biografía</label>
+                  <textarea 
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white min-h-[100px] outline-none focus:ring-2 focus:ring-primary/20"
+                    placeholder="Cuéntanos sobre tu experiencia y especialidad..."
+                    value={bio}
+                    onChange={(e) => setBio(e.target.value)}
                   />
                 </div>
               </div>

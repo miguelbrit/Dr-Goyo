@@ -21,6 +21,18 @@ const fileFilter = (req: any, file: any, cb: any) => {
   }
 };
 
+export const docUpload = multer({
+  storage,
+  fileFilter: (req, file, cb) => {
+    const allowed = ['text/plain', 'application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    if (allowed.includes(file.mimetype) || file.originalname.endsWith('.txt') || file.originalname.endsWith('.pdf')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Formato no permitido. Solo PDF, TXT o DOCX') as any, false);
+    }
+  }
+});
+
 export const upload = multer({
   storage,
   fileFilter,

@@ -5,13 +5,25 @@ import path from 'path';
 import userRoutes from './routes/userRoutes.js';
 import entityRoutes from './routes/entityRoutes.js';
 import articleRoutes from './routes/articleRoutes.js';
+import adminRoutes from './routes/adminRoutes.js';
+import appointmentRoutes from './routes/appointmentRoutes.js';
 
-// 1. Load root .env (for shared vars like PORT, DB)
-const rootEnvPath = path.resolve(process.cwd(), '../.env');
-dotenv.config({ path: rootEnvPath });
-
-// 2. Load local .env (for backend specific vars like SUPABASE_URL)
-dotenv.config(); 
+// 1. Load contextually: only use dotenv in local development
+if (process.env.NODE_ENV !== 'production') {
+  try {
+    // Try to load root .env
+    const rootEnvPath = path.resolve(process.cwd(), '.env');
+    const rootEnvParentPath = path.resolve(process.cwd(), '../.env');
+    
+    dotenv.config({ path: rootEnvPath });
+    dotenv.config({ path: rootEnvParentPath });
+    
+    // Also load local .env if it exists
+    dotenv.config();
+  } catch (e) {
+    console.log('Dotenv configuration skipped or failed');
+  }
+}
 
 console.log('Entorno cargado. Supabase URL:', process.env.SUPABASE_URL ? 'OK' : 'MISSING');
 
@@ -39,6 +51,8 @@ app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 app.use('/api/users', userRoutes);
 app.use('/api/entities', entityRoutes);
 app.use('/api/articles', articleRoutes);
+app.use('/api/appointments', appointmentRoutes);
+app.use('/api/admin', adminRoutes);
 
 app.get('/api/health', (req, res) => {
   console.log('--- REQUERIMIENTO RECIBIDO EN /api/health ---');

@@ -1,0 +1,9 @@
+{
+  "name": "Laboratorio Goyo Analitica",
+  "email": "bio@labgoyo.com",
+  "password": "lab123456",
+  "type": "Laboratorio",
+  "address": "Av. Las Ciencias",
+  "city": "Caracas",
+  "testTypes": "Sangre, Orina, Rayos X"
+}
