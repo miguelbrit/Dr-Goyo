@@ -56,7 +56,12 @@ app.use('/api/admin', adminRoutes);
 
 app.get('/api/health', (req, res) => {
   console.log('--- REQUERIMIENTO RECIBIDO EN /api/health ---');
-  res.json({ status: 'ok', via: 'api' });
+  res.json({ 
+    status: 'ok', 
+    via: 'api', 
+    deployed_at: '2026-02-24 00:25 AM',
+    branch: 'main'
+  });
 });
 
 // 4. Static & Health
