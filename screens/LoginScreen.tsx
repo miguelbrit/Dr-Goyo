@@ -9,10 +9,11 @@ import { SocialAuthButtons } from '../components/SocialAuthButtons';
 interface LoginScreenProps {
   onBack: () => void;
   onLoginSuccess: (role: UserRole, userName: string) => void;
+  onPendingReview?: () => void;
   onForgotPassword?: () => void;
 }
 
-export const LoginScreen: React.FC<LoginScreenProps> = ({ onBack, onLoginSuccess, onForgotPassword }) => {
+export const LoginScreen: React.FC<LoginScreenProps> = ({ onBack, onLoginSuccess, onPendingReview, onForgotPassword }) => {
   const [step, setStep] = useState<'role' | 'login'>('role');
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
   const [loading, setLoading] = useState(false);
@@ -47,11 +48,19 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onBack, onLoginSuccess
       }
 
       if (!response.ok || !result.success) {
+        if (result.error === 'ACCOUNT_PENDING' && onPendingReview) {
+          setLoading(false);
+          onPendingReview();
+          return;
+        }
         throw new Error(result.error || result.message || 'Error al iniciar sesión');
       }
 
       // Success: result.token contains the JWT
       localStorage.setItem('token', result.token);
+      localStorage.setItem('user_role', result.user.role);
+      localStorage.setItem('user_name', result.user.name);
+      
       setLoading(false);
       onLoginSuccess(result.user.role || selectedRole, result.user.name || 'Usuario');
     } catch (err: any) {

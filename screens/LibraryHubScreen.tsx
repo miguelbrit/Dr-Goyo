@@ -1,11 +1,12 @@
 import React from 'react';
-import { ChevronLeft, Pill, Activity } from 'lucide-react';
+import { ChevronLeft, Pill, Activity, ClipboardList } from 'lucide-react';
 import { BottomNav } from '../components/BottomNav';
 
 interface LibraryHubScreenProps {
   onBack: () => void;
   onNavigateToMedicines: () => void;
   onNavigateToPathologies: () => void;
+  onNavigateToPreOp: () => void;
   onNavigate: (tab: string) => void;
 }
 
@@ -13,6 +14,7 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({
   onBack,
   onNavigateToMedicines,
   onNavigateToPathologies,
+  onNavigateToPreOp,
   onNavigate
 }) => {
   return (
@@ -31,7 +33,7 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({
       </header>
 
       {/* Content */}
-      <div className="flex-1 p-6 space-y-6">
+      <div className="flex-1 p-6 space-y-6 overflow-y-auto">
         
         {/* Medicines Card */}
         <button 
@@ -44,7 +46,7 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({
           <div>
             <h2 className="font-heading font-bold text-xl text-gray-900 mb-2">Medicamentos</h2>
             <p className="text-gray-500 text-sm leading-relaxed">
-              Guía completa de fármacos, dosis recomendadas, efectos secundarios y contraindicaciones.
+              Guía completa de fármacos, dosis recomendadas y contraindicaciones.
             </p>
           </div>
           <span className="text-primary font-bold text-sm mt-2 group-hover:underline">Explorar Medicamentos</span>
@@ -61,10 +63,27 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({
           <div>
             <h2 className="font-heading font-bold text-xl text-gray-900 mb-2">Patologías</h2>
             <p className="text-gray-500 text-sm leading-relaxed">
-              Información detallada sobre enfermedades, síntomas, causas y especialistas recomendados.
+              Información detallada sobre enfermedades, síntomas y causas.
             </p>
           </div>
           <span className="text-primary font-bold text-sm mt-2 group-hover:underline">Explorar Patologías</span>
+        </button>
+
+        {/* Pre-Op Card */}
+        <button 
+          onClick={onNavigateToPreOp}
+          className="w-full bg-white p-6 rounded-3xl shadow-soft border border-gray-100 flex flex-col items-center text-center gap-4 hover:shadow-lg transition-all group"
+        >
+          <div className="w-20 h-20 bg-orange-50 text-orange-600 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+            <ClipboardList size={40} />
+          </div>
+          <div>
+            <h2 className="font-heading font-bold text-xl text-gray-900 mb-2">Pre-Operatorios</h2>
+            <p className="text-gray-500 text-sm leading-relaxed">
+              Lista de requisitos médicos y exámenes necesarios antes de una cirugía.
+            </p>
+          </div>
+          <span className="text-primary font-bold text-sm mt-2 group-hover:underline">Ver Requisitos</span>
         </button>
 
       </div>

@@ -41,6 +41,7 @@ export const register = async (req: Request, res: Response) => {
     // 3. Create Specific Entity Profile
     switch (type) {
       case 'Paciente':
+        // Patients are approved by default (no status field in schema)
         await prisma.patient.create({
           data: {
             profileId: authId,
@@ -74,12 +75,13 @@ export const register = async (req: Request, res: Response) => {
         await (prisma.pharmacy as any).create({ 
           data: { 
             profileId: authId,
-            businessName: name, // Usamos el nombre como BusinessName
+            businessName: name,
             address,
             city,
             openingHours,
             closingHours,
-            hasDelivery: hasDelivery === true || hasDelivery === 'true'
+            hasDelivery: hasDelivery === true || hasDelivery === 'true',
+            status: 'PENDING'
           } 
         });
         break;
@@ -92,7 +94,8 @@ export const register = async (req: Request, res: Response) => {
             city,
             testTypes,
             openingHours,
-            closingHours
+            closingHours,
+            status: 'PENDING'
           } 
         });
         break;
@@ -100,12 +103,13 @@ export const register = async (req: Request, res: Response) => {
 
     res.status(201).json({ 
       success: true, 
-      message: 'Usuario registrado exitosamente', 
+      message: 'Usuario registrado exitosamente. Su cuenta está en revisión.', 
       user: { 
         id: authId, 
         name: profile.name, 
         type: profile.type,
-        role: type === 'Medico' ? 'doctor' : type === 'Farmacia' ? 'pharmacy' : type === 'Laboratorio' ? 'lab' : 'patient'
+        role: type === 'Medico' ? 'doctor' : type === 'Farmacia' ? 'pharmacy' : type === 'Laboratorio' ? 'lab' : 'patient',
+        status: (type === 'Paciente' || type === 'Admin') ? 'VERIFIED' : 'PENDING'
       } 
     });
   } catch (error: any) {
@@ -141,9 +145,14 @@ export const login = async (req: Request, res: Response) => {
     const authUser = authData.user;
     const token = authData.session?.access_token;
 
-    // 2. Fetch extended profile from Prisma
+    // 2. Fetch extended profile from Prisma with child entities
     const profile = await prisma.profile.findUnique({ 
-      where: { id: authUser.id } 
+      where: { id: authUser.id },
+      include: {
+        doctor: true,
+        pharmacy: true,
+        laboratory: true
+      }
     });
     
     if (!profile) {
@@ -154,11 +163,34 @@ export const login = async (req: Request, res: Response) => {
       });
     }
 
+    // 3. Verification Enforcement
+    let currentStatus = 'VERIFIED';
+    if (profile.type === 'Medico') currentStatus = (profile.doctor as any)?.status || 'PENDING';
+    if (profile.type === 'Farmacia') currentStatus = (profile.pharmacy as any)?.status || 'PENDING';
+    if (profile.type === 'Laboratorio') currentStatus = (profile.laboratory as any)?.status || 'PENDING';
+
+    if (currentStatus === 'PENDING') {
+      return res.status(403).json({
+        success: false,
+        error: 'ACCOUNT_PENDING',
+        message: 'Tu cuenta está en proceso de revisión por nuestro equipo médico.',
+      });
+    }
+
+    if (currentStatus === 'REJECTED') {
+      return res.status(403).json({
+        success: false,
+        error: 'ACCOUNT_REJECTED',
+        message: 'Tu solicitud de cuenta ha sido rechazada. Contacta a soporte para más detalles.',
+      });
+    }
+
     const roleMapping: Record<string, string> = {
       'Paciente': 'patient',
       'Medico': 'doctor',
       'Farmacia': 'pharmacy',
-      'Laboratorio': 'lab'
+      'Laboratorio': 'lab',
+      'Admin': 'admin'
     };
 
     res.json({ 
@@ -192,23 +224,23 @@ export const getProfile = async (req: AuthRequest, res: Response) => {
       where: { id: req.user?.id },
       include: {
         patient: true,
-        doctor: {
-          include: {
-            availability: true,
-            appointments: {
+            doctor: {
               include: {
-                patient: {
+                availability: true,
+                appointments: {
                   include: {
-                    profile: true
+                    patient: {
+                      include: {
+                        profile: true
+                      }
+                    }
+                  } as any,
+                  orderBy: {
+                    date: 'asc'
                   }
                 }
-              },
-              orderBy: {
-                date: 'asc'
               }
-            }
-          }
-        },
+            } as any,
         pharmacy: true,
         laboratory: true,
       },

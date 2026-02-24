@@ -5,9 +5,10 @@ interface AvatarProps {
   alt: string;
   size?: 'sm' | 'md' | 'lg' | 'xl';
   status?: 'online' | 'offline' | 'busy';
+  className?: string;
 }
 
-export const Avatar: React.FC<AvatarProps> = ({ src, alt, size = 'md', status }) => {
+export const Avatar: React.FC<AvatarProps> = ({ src, alt, size = 'md', status, className = '' }) => {
   const sizes = {
     sm: 'w-8 h-8',
     md: 'w-12 h-12',
@@ -16,7 +17,7 @@ export const Avatar: React.FC<AvatarProps> = ({ src, alt, size = 'md', status })
   };
 
   return (
-    <div className="relative inline-block">
+    <div className={`relative inline-block ${className}`}>
       <div className={`${sizes[size]} rounded-full overflow-hidden border-2 border-white shadow-sm bg-gray-100`}>
         {src ? (
           <img src={src} alt={alt} className="w-full h-full object-cover" />

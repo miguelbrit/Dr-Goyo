@@ -41,6 +41,13 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardProps> = ({ onLogout
       });
       const result = await response.json();
       if (result.success) {
+        // --- SECURITY GUARD ---
+        if (result.data.doctor?.status !== 'VERIFIED') {
+          console.error("Access denied: Doctor not verified");
+          onLogout();
+          return;
+        }
+
         setProfile(result.data);
         setUserName(result.data.name);
       }

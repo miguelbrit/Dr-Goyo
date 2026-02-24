@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { supabase } from '../utils/supabase.js';
+import prisma from '../utils/prisma.js';
 
 export interface AuthRequest extends Request {
   user?: {
@@ -23,13 +24,21 @@ export const authMiddleware = async (req: AuthRequest, res: Response, next: Next
       return res.status(401).json({ error: 'Token inválido o expirado' });
     }
 
-    req.user = {
+    // Fetch Profile to get User Type / Role
+    const profile = await prisma.profile.findUnique({
+      where: { id: data.user.id }
+    });
+
+    (req as any).user = {
       id: data.user.id,
-      email: data.user.email
+      email: data.user.email,
+      type: profile?.type,
+      role: profile?.type === 'Admin' ? 'admin' : 'user'
     };
     
     next();
   } catch (error) {
+    console.error('CRITICAL AUTH ERROR:', error);
     return res.status(401).json({ error: 'Error en autenticación' });
   }
 };

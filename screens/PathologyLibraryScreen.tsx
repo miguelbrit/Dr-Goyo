@@ -1,67 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, Search, Activity, ChevronRight, Stethoscope } from 'lucide-react';
+import { ChevronLeft, Search, Activity, ChevronRight, Stethoscope, Loader2 } from 'lucide-react';
 import { BottomNav } from '../components/BottomNav';
 import { PathologyProfile } from '../types';
 import { Pagination } from '../components/Pagination';
-
-// Dummy Data for Pathologies (5 items as requested)
-export const PATHOLOGIES_DB: PathologyProfile[] = [
-  {
-    id: 'pat1',
-    name: 'Diabetes Mellitus',
-    shortDescription: 'Enfermedad crónica que afecta la conversión de alimentos en energía.',
-    fullDescription: 'La diabetes es una enfermedad crónica de larga duración que afecta la forma en que el cuerpo convierte los alimentos en energía. La mayoría de los alimentos que come se convierten en azúcar (glucosa) que se libera en el torrente sanguíneo.',
-    symptoms: ['Aumento de la sed', 'Micción frecuente', 'Hambre extrema', 'Pérdida de peso sin causa'],
-    causes: 'Resistencia a la insulina o incapacidad del páncreas para producir insulina.',
-    riskFactors: ['Obesidad', 'Sedentarismo', 'Antecedentes familiares', 'Edad avanzada'],
-    specialty: 'Endocrinólogo',
-    image: 'https://images.unsplash.com/photo-1576091160550-2187d80a1a44?auto=format&fit=crop&q=80&w=200'
-  },
-  {
-    id: 'pat2',
-    name: 'Hipertensión Arterial',
-    shortDescription: 'Presión arterial alta constante que puede dañar las arterias.',
-    fullDescription: 'La hipertensión arterial es una enfermedad común en la que la fuerza que ejerce la sangre contra las paredes de las arterias con el transcurso del tiempo es lo suficientemente alta como para poder causarte problemas de salud, como una enfermedad cardíaca.',
-    symptoms: ['Dolor de cabeza', 'Dificultad para respirar', 'Sangrado nasal', 'Generalmente asintomática'],
-    causes: 'Estrechamiento de las arterias, volumen de sangre elevado, o condiciones subyacentes.',
-    riskFactors: ['Consumo excesivo de sal', 'Estrés', 'Tabaco', 'Alcohol'],
-    specialty: 'Cardiólogo',
-    image: 'https://images.unsplash.com/photo-1628348068343-c6a848d2b6dd?auto=format&fit=crop&q=80&w=200'
-  },
-  {
-    id: 'pat3',
-    name: 'Asma',
-    shortDescription: 'Vías respiratorias estrechas e inflamadas que dificultan la respiración.',
-    fullDescription: 'El asma es una afección en la que las vías respiratorias de una persona se inflaman, estrechan y producen mayores cantidades de mucosa de lo normal, lo que dificulta la respiración.',
-    symptoms: ['Falta de aire', 'Dolor u opresión del pecho', 'Sibilancias al exhalar', 'Tos nocturna'],
-    causes: 'Combinación de factores ambientales y genéticos (alérgenos, aire frío).',
-    riskFactors: ['Fumar', 'Obesidad', 'Exposición a contaminantes', 'Alergias'],
-    specialty: 'Neumonólogo',
-    image: 'https://images.unsplash.com/photo-1631549916768-4119b2e5f926?auto=format&fit=crop&q=80&w=200'
-  },
-  {
-    id: 'pat4',
-    name: 'Anemia',
-    shortDescription: 'Insuficiencia de glóbulos rojos sanos para transportar oxígeno.',
-    fullDescription: 'La anemia es una afección que se desarrolla cuando la sangre produce una cantidad inferior a la normal de glóbulos rojos sanos. Si tiene anemia, su cuerpo no obtiene suficiente cantidad de sangre rica en oxígeno.',
-    symptoms: ['Fatiga extrema', 'Debilidad', 'Piel pálida o amarillenta', 'Manos y pies fríos'],
-    causes: 'Deficiencia de hierro, vitamina B12, o enfermedades crónicas.',
-    riskFactors: ['Dieta carente de vitaminas', 'Trastornos intestinales', 'Menstruación'],
-    specialty: 'Hematólogo',
-    image: 'https://images.unsplash.com/photo-1579154204601-01588f351e67?auto=format&fit=crop&q=80&w=200'
-  },
-  {
-    id: 'pat5',
-    name: 'Migraña',
-    shortDescription: 'Dolor de cabeza intenso, a menudo acompañado de náuseas y sensibilidad a la luz.',
-    fullDescription: 'Una migraña es un dolor de cabeza que puede causar un dolor pulsátil intenso o una sensación pulsante, generalmente de un solo lado. A menudo suele estar acompañada de náuseas, vómitos y sensibilidad a la luz y al sonido.',
-    symptoms: ['Dolor pulsátil en un lado', 'Náuseas y vómitos', 'Sensibilidad a la luz', 'Aura visual'],
-    causes: 'Cambios en el tronco encefálico y sus interacciones con el nervio trigémino.',
-    riskFactors: ['Historial familiar', 'Edad', 'Sexo (más común en mujeres)', 'Cambios hormonales'],
-    specialty: 'Neurólogo',
-    image: 'https://images.unsplash.com/photo-1612506697071-7058296a2068?auto=format&fit=crop&q=80&w=200'
-  }
-];
+import { useGlossary } from '../hooks/useGlossary';
 
 interface PathologyLibraryScreenProps {
   onBack: () => void;
@@ -76,14 +18,28 @@ export const PathologyLibraryScreen: React.FC<PathologyLibraryScreenProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 4;
+  const itemsPerPage = 6;
+
+  const { items: glossaryItems, loading } = useGlossary('PATHOLOGY');
 
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery]);
 
-  // Filter and Sort Alphabetically
-  const filteredPathologies = PATHOLOGIES_DB
+  // Map GlossaryItem to PathologyProfile
+  const pathologies: PathologyProfile[] = (glossaryItems || []).map(item => ({
+    id: item.id,
+    name: item.term,
+    shortDescription: item.description.substring(0, 100) + '...',
+    fullDescription: item.description,
+    symptoms: [],
+    causes: "Ver descripción.",
+    riskFactors: [],
+    specialty: item.category || 'General',
+    image: 'https://images.unsplash.com/photo-1576091160550-2187d80a1a44?auto=format&fit=crop&q=80&w=200'
+  }));
+
+  const filteredPathologies = pathologies
     .filter(pat => pat.name.toLowerCase().includes(searchQuery.toLowerCase()))
     .sort((a, b) => a.name.localeCompare(b.name));
 
@@ -122,7 +78,12 @@ export const PathologyLibraryScreen: React.FC<PathologyLibraryScreenProps> = ({
 
       {/* Content */}
       <div className="flex-1 p-4 space-y-4 overflow-y-auto">
-        {currentPathologies.length > 0 ? (
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-24 text-gray-400">
+            <Loader2 size={40} className="animate-spin mb-4 text-primary opacity-20" />
+            <p className="text-sm font-medium">Cargando patologías...</p>
+          </div>
+        ) : currentPathologies.length > 0 ? (
           <>
             {currentPathologies.map((pat) => (
               <button
@@ -158,7 +119,7 @@ export const PathologyLibraryScreen: React.FC<PathologyLibraryScreenProps> = ({
         ) : (
           <div className="text-center py-12 text-gray-400">
             <Activity size={48} className="mx-auto mb-4 opacity-20" />
-            <p>No se encontraron resultados.</p>
+            <p>{searchQuery ? 'No se encontraron resultados.' : 'Contenido próximamente.'}</p>
           </div>
         )}
       </div>

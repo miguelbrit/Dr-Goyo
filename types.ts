@@ -112,20 +112,28 @@ export interface PathologyProfile {
 export interface Article {
   id: string;
   title: string;
-  subtitle?: string;
+  subtitle?: string; // Título secundario
+  intro?: string;    // Introducción Breve (Nuevo)
   category: string;
-  specialty?: string; // Smart connection
+  subcategories?: string; // CSV
+  tags?: string;          // CSV
+  specialty?: string; 
   author: string;
   status: 'published' | 'draft';
   publishDate: string;
   views: number;
   image: string;
   content?: string;
+  textColor?: string; // Optional: specific custom color for this article if needed
 }
 
-export interface GlossaryTerm {
+export interface GlossaryItem {
   id: string;
   term: string;
-  definition: string;
-  specialty: string;
+  type: 'MEDICINE' | 'PATHOLOGY' | 'PRE_OP_LIST';
+  description: string;
+  category: string;
+  status: 'DRAFT' | 'PUBLISHED';
+  createdAt?: string;
+  updatedAt?: string;
 }

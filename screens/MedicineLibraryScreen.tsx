@@ -1,62 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, Search, Pill, ChevronRight } from 'lucide-react';
+import { ChevronLeft, Search, Pill, ChevronRight, Loader2 } from 'lucide-react';
 import { BottomNav } from '../components/BottomNav';
 import { MedicineProfile } from '../types';
 import { Pagination } from '../components/Pagination';
-
-// Dummy Data for Medicines
-export const MEDICINES_DB: MedicineProfile[] = [
-  {
-    id: 'med1',
-    name: 'Amoxicilina',
-    category: 'Antibiótico',
-    description: 'Antibiótico semisintético derivado de la penicilina. Se utiliza para tratar una amplia variedad de infecciones bacterianas.',
-    dosage: 'Generalmente 500mg cada 8 horas, o según indicación médica.',
-    sideEffects: ['Náuseas', 'Erupción cutánea', 'Diarrea'],
-    precautions: 'No usar si es alérgico a la penicilina. Completar el tratamiento prescrito.',
-    image: 'https://images.unsplash.com/photo-1471864190281-a93a3070b6de?auto=format&fit=crop&q=80&w=200'
-  },
-  {
-    id: 'med2',
-    name: 'Ibuprofeno',
-    category: 'Antiinflamatorio',
-    description: 'Antiinflamatorio no esteroideo (AINE) utilizado para aliviar el dolor, reducir la inflamación y bajar la fiebre.',
-    dosage: 'Adultos: 400mg a 600mg cada 6-8 horas. Máximo 2400mg al día.',
-    sideEffects: ['Acidez estomacal', 'Dolor de estómago', 'Mareos'],
-    precautions: 'Tomar con alimentos. Evitar uso prolongado sin supervisión médica.',
-    image: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&q=80&w=200'
-  },
-  {
-    id: 'med3',
-    name: 'Loratadina',
-    category: 'Antihistamínico',
-    description: 'Medicamento utilizado para tratar síntomas de alergias como estornudos, secreción nasal y picazón en los ojos.',
-    dosage: 'Adultos y niños mayores de 6 años: 10mg una vez al día.',
-    sideEffects: ['Dolor de cabeza', 'Somnolencia (poco común)', 'Boca seca'],
-    precautions: 'Precaución en pacientes con enfermedad hepática grave.',
-    image: 'https://images.unsplash.com/photo-1550572017-edd951aa8f72?auto=format&fit=crop&q=80&w=200'
-  },
-  {
-    id: 'med4',
-    name: 'Metformina',
-    category: 'Antidiabético',
-    description: 'Medicamento de primera línea para el tratamiento de la diabetes tipo 2. Ayuda a controlar los niveles de azúcar en sangre.',
-    dosage: 'Inicialmente 500mg o 850mg una vez al día con las comidas.',
-    sideEffects: ['Náuseas', 'Malestar estomacal', 'Sabor metálico'],
-    precautions: 'No usar en caso de insuficiencia renal severa.',
-    image: 'https://images.unsplash.com/photo-1628771065518-0d82f0263329?auto=format&fit=crop&q=80&w=200'
-  },
-  {
-    id: 'med5',
-    name: 'Paracetamol',
-    category: 'Analgésico / Antipirético',
-    description: 'Medicamento común para aliviar el dolor leve o moderado y reducir la fiebre.',
-    dosage: 'Adultos: 500mg a 1000mg cada 4-6 horas. Máximo 4000mg al día.',
-    sideEffects: ['Raros en dosis recomendadas', 'Daño hepático en sobredosis'],
-    precautions: 'No exceder la dosis máxima diaria. Evitar consumo de alcohol.',
-    image: 'https://images.unsplash.com/photo-1584017911766-d451b3d0e843?auto=format&fit=crop&q=80&w=200'
-  }
-];
+import { useGlossary } from '../hooks/useGlossary';
 
 interface MedicineLibraryScreenProps {
   onBack: () => void;
@@ -71,14 +18,27 @@ export const MedicineLibraryScreen: React.FC<MedicineLibraryScreenProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 4;
+  const itemsPerPage = 6;
+  
+  const { items: glossaryItems, loading, error } = useGlossary('MEDICINE');
 
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery]);
 
-  // Sort alphabetical and Filter
-  const filteredMedicines = MEDICINES_DB
+  // Map GlossaryItem to MedicineProfile
+  const medicines: MedicineProfile[] = (glossaryItems || []).map(item => ({
+    id: item.id,
+    name: item.term,
+    category: item.category,
+    description: item.description,
+    dosage: 'Consultar detalles en descripción.',
+    sideEffects: [],
+    precautions: 'Uso bajo supervisión médica.',
+    image: 'https://images.unsplash.com/photo-1584017911766-d451b3d0e843?auto=format&fit=crop&q=80&w=200'
+  }));
+
+  const filteredMedicines = medicines
     .filter(med => med.name.toLowerCase().includes(searchQuery.toLowerCase()))
     .sort((a, b) => a.name.localeCompare(b.name));
 
@@ -117,7 +77,12 @@ export const MedicineLibraryScreen: React.FC<MedicineLibraryScreenProps> = ({
 
       {/* Content */}
       <div className="flex-1 p-4 space-y-4 overflow-y-auto">
-        {currentMedicines.length > 0 ? (
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-24 text-gray-400">
+            <Loader2 size={40} className="animate-spin mb-4 text-primary opacity-20" />
+            <p className="text-sm font-medium">Cargando medicinas...</p>
+          </div>
+        ) : currentMedicines.length > 0 ? (
           <>
             {currentMedicines.map((med) => (
               <button
@@ -149,7 +114,7 @@ export const MedicineLibraryScreen: React.FC<MedicineLibraryScreenProps> = ({
         ) : (
           <div className="text-center py-12 text-gray-400">
             <Pill size={48} className="mx-auto mb-4 opacity-20" />
-            <p>No se encontraron medicamentos.</p>
+            <p>{searchQuery ? 'No se encontraron medicamentos.' : 'Contenido próximamente.'}</p>
           </div>
         )}
       </div>

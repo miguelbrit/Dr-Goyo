@@ -1,11 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, Package, ShoppingCart, BarChart, MessageSquare, Settings, LogOut, 
-  Bell, Menu, Search, Plus, AlertTriangle, ChevronRight, Filter, DollarSign, Edit, Trash2, MapPin
+  Bell, Menu, Search, Plus, AlertTriangle, ChevronRight, Filter, DollarSign, Edit, Trash2, MapPin, Loader2
 } from 'lucide-react';
 import { Avatar } from '../components/Avatar';
 import { Button } from '../components/Button';
-import { Input } from '../components/Input';
 
 interface StatItem {
   label: string;
@@ -34,16 +33,48 @@ interface PharmacyDashboardProps {
 
 type DashboardView = 'overview' | 'inventory' | 'orders' | 'chat' | 'stats' | 'settings';
 
-export const PharmacyDashboardScreen: React.FC<PharmacyDashboardProps> = ({ onLogout, userName = "Farmacia", userProfile }) => {
+export const PharmacyDashboardScreen: React.FC<PharmacyDashboardProps> = ({ onLogout, userName: initialUserName = "Farmacia", userProfile: initialUserProfile }) => {
   const [currentView, setCurrentView] = useState<DashboardView>('overview');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isOpen, setIsOpen] = useState(true);
+  const [profile, setProfile] = useState(initialUserProfile);
+  const [loading, setLoading] = useState(!initialUserProfile);
+  const [userName, setUserName] = useState(initialUserName);
 
-  const pharmacyData = userProfile?.pharmacy || {};
+  useEffect(() => {
+    if (!profile) fetchProfile();
+  }, []);
+
+  const fetchProfile = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/users/profile', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const result = await response.json();
+      if (result.success) {
+        // --- SECURITY GUARD ---
+        if (result.data.pharmacy?.status !== 'VERIFIED') {
+          console.error("Access denied: Pharmacy not verified");
+          onLogout();
+          return;
+        }
+        setProfile(result.data);
+        setUserName(result.data.name);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const pharmacyData = profile?.pharmacy || {};
   const city = pharmacyData.city || "Caracas";
   const address = pharmacyData.address || "Dirección no especificada";
 
-  // ... (rest of mock data remains same for now)
+  // ... (rest of mock data)
   const stats = [
     { label: 'Ventas del Día', value: '$840.50', icon: DollarSign, color: 'bg-green-100 text-green-600' },
     { label: 'Pedidos Activos', value: '12', icon: ShoppingCart, color: 'bg-blue-100 text-blue-600' },
@@ -72,7 +103,6 @@ export const PharmacyDashboardScreen: React.FC<PharmacyDashboardProps> = ({ onLo
   ];
 
   // --- Components ---
-
   const SidebarItem = ({ id, icon: Icon, label }: { id: DashboardView; icon: any; label: string }) => (
     <button
       onClick={() => {
@@ -90,12 +120,17 @@ export const PharmacyDashboardScreen: React.FC<PharmacyDashboardProps> = ({ onLo
     </button>
   );
 
-
   // --- Main Render ---
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-bg flex items-center justify-center">
+        <Loader2 className="w-12 h-12 text-primary animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-bg flex">
-      
       {/* Mobile Sidebar Overlay */}
       {isSidebarOpen && (
         <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={() => setIsSidebarOpen(false)} />
@@ -140,7 +175,6 @@ export const PharmacyDashboardScreen: React.FC<PharmacyDashboardProps> = ({ onLo
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col h-screen overflow-hidden">
-        
         {/* Header */}
         <header className="bg-white border-b border-gray-200 h-20 px-8 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-4">
@@ -150,7 +184,6 @@ export const PharmacyDashboardScreen: React.FC<PharmacyDashboardProps> = ({ onLo
             >
               <Menu size={24} />
             </button>
-            
             <div className="hidden md:block">
                <h2 className="text-xl font-heading font-bold text-gray-800">{userName}</h2>
                <div className="flex items-center gap-1 text-xs text-gray-500">
@@ -175,42 +208,29 @@ export const PharmacyDashboardScreen: React.FC<PharmacyDashboardProps> = ({ onLo
                   Cerrado
                </button>
             </div>
-
             <button className="relative p-2 hover:bg-gray-100 rounded-full text-gray-500">
               <Bell size={20} />
               <span className="absolute top-1.5 right-2 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
             </button>
-            
             <div className="flex items-center gap-3 border-l border-gray-200 pl-6">
-              <Avatar src="https://images.unsplash.com/photo-1587854692152-cbe660dbde88?auto=format&fit=crop&q=80&w=200" alt="Farmacia" size="md" />
+              <Avatar src={profile?.imageUrl || "https://images.unsplash.com/photo-1587854692152-cbe660dbde88?auto=format&fit=crop&q=80&w=200"} alt="Farmacia" size="md" />
             </div>
           </div>
         </header>
 
         {/* Dashboard Content */}
         <div className="flex-1 overflow-y-auto p-8">
-          
           {currentView === 'overview' && (
             <div className="space-y-8 animate-in fade-in duration-500">
-               {/* Stats Grid */}
                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                   {stats.map((stat, idx) => <StatCard key={idx} item={stat} />)}
                </div>
-
                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                  {/* Left Column: Recent Orders & Sales */}
                   <div className="lg:col-span-2 space-y-6">
-                     
-                     {/* Recent Orders */}
                      <div className="bg-white rounded-2xl shadow-soft border border-gray-100 overflow-hidden">
                         <div className="p-6 border-b border-gray-100 flex justify-between items-center">
                            <h3 className="font-heading font-bold text-lg text-gray-900">Pedidos Recientes</h3>
-                           <button 
-                              onClick={() => setCurrentView('orders')}
-                              className="text-primary text-sm font-medium hover:underline"
-                           >
-                              Ver todos
-                           </button>
+                           <button onClick={() => setCurrentView('orders')} className="text-primary text-sm font-medium hover:underline">Ver todos</button>
                         </div>
                         <div className="divide-y divide-gray-100">
                            {recentOrders.map((order) => (
@@ -235,8 +255,6 @@ export const PharmacyDashboardScreen: React.FC<PharmacyDashboardProps> = ({ onLo
                         </div>
                      </div>
                   </div>
-
-                  {/* Right Column: Low Stock Alerts */}
                   <div className="space-y-6">
                      <div className="bg-white p-6 rounded-2xl shadow-soft border border-gray-100">
                         <div className="flex items-center gap-2 mb-4">
@@ -250,24 +268,11 @@ export const PharmacyDashboardScreen: React.FC<PharmacyDashboardProps> = ({ onLo
                                     <p className="font-bold text-gray-800 text-sm">{item.name}</p>
                                     <p className="text-xs text-orange-700">Quedan: {item.stock} (Mín: {item.min})</p>
                                  </div>
-                                 <button className="text-xs bg-white text-orange-600 font-bold px-2 py-1 rounded border border-orange-200 hover:bg-orange-100">
-                                    Reponer
-                                 </button>
+                                 <button className="text-xs bg-white text-orange-600 font-bold px-2 py-1 rounded border border-orange-200 hover:bg-orange-100">Reponer</button>
                               </div>
                            ))}
                         </div>
-                        <button 
-                           onClick={() => setCurrentView('inventory')}
-                           className="w-full mt-4 text-sm text-gray-500 hover:text-gray-700 font-medium"
-                        >
-                           Ver inventario completo
-                        </button>
-                     </div>
-
-                     <div className="bg-gradient-to-br from-purple-600 to-indigo-700 rounded-2xl p-6 text-white shadow-lg">
-                        <h3 className="font-heading font-bold text-lg mb-2">Promocionar Productos</h3>
-                        <p className="text-sm text-purple-100 mb-4">Aumenta tus ventas destacando productos en la app de pacientes.</p>
-                        <Button label="Crear Campaña" variant="secondary" fullWidth className="bg-white text-purple-700 hover:bg-purple-50" />
+                        <button onClick={() => setCurrentView('inventory')} className="w-full mt-4 text-sm text-gray-500 hover:text-gray-700 font-medium">Ver inventario completo</button>
                      </div>
                   </div>
                </div>
@@ -281,83 +286,64 @@ export const PharmacyDashboardScreen: React.FC<PharmacyDashboardProps> = ({ onLo
                   <div className="flex gap-2 w-full md:w-auto">
                      <div className="relative flex-1 md:w-64">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                        <input 
-                           type="text" 
-                           placeholder="Buscar medicamento..." 
-                           className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-                        />
+                        <input type="text" placeholder="Buscar medicamento..." className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" />
                      </div>
-                     <button className="p-2 bg-white border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50">
-                        <Filter size={20} />
-                     </button>
+                     <button className="p-2 bg-white border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50"><Filter size={20} /></button>
                      <Button label="Agregar" icon={Plus} />
                   </div>
                </div>
-
                <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
-                  <div className="overflow-x-auto">
-                     <table className="w-full text-left">
-                        <thead className="bg-gray-50 text-gray-500 text-xs uppercase font-bold border-b border-gray-200">
-                           <tr>
-                              <th className="p-4">Producto</th>
-                              <th className="p-4">Categoría</th>
-                              <th className="p-4">Precio</th>
-                              <th className="p-4">Stock</th>
-                              <th className="p-4">Estado</th>
-                              <th className="p-4 text-right">Acciones</th>
+                  <table className="w-full text-left">
+                     <thead className="bg-gray-50 text-gray-500 text-xs uppercase font-bold border-b border-gray-200">
+                        <tr>
+                           <th className="p-4">Producto</th>
+                           <th className="p-4">Categoría</th>
+                           <th className="p-4">Precio</th>
+                           <th className="p-4">Stock</th>
+                           <th className="p-4">Estado</th>
+                           <th className="p-4 text-right">Acciones</th>
+                        </tr>
+                     </thead>
+                     <tbody className="divide-y divide-gray-100">
+                        {inventory.map((item) => (
+                           <tr key={item.id} className="hover:bg-gray-50/50 transition-colors">
+                              <td className="p-4">
+                                 <div className="font-bold text-gray-900">{item.name}</div>
+                                 <div className="text-xs text-gray-400">ID: #{item.id}</div>
+                              </td>
+                              <td className="p-4 text-sm text-gray-600">{item.category}</td>
+                              <td className="p-4 font-medium text-gray-900">${item.price.toFixed(2)}</td>
+                              <td className="p-4 text-sm text-gray-600">{item.stock} un.</td>
+                              <td className="p-4">
+                                 <span className={`text-xs font-bold px-3 py-1 rounded-full uppercase ${
+                                    item.status === 'ok' ? 'bg-green-100 text-green-700' :
+                                    item.status === 'low' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'
+                                 }`}>
+                                    {item.status === 'ok' ? 'Disponible' : item.status === 'low' ? 'Bajo' : 'Crítico'}
+                                 </span>
+                              </td>
+                              <td className="p-4 text-right">
+                                 <div className="flex justify-end gap-2">
+                                    <button className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg"><Edit size={16} /></button>
+                                    <button className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg"><Trash2 size={16} /></button>
+                                 </div>
+                              </td>
                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100">
-                           {inventory.map((item) => (
-                              <tr key={item.id} className="hover:bg-gray-50/50 transition-colors">
-                                 <td className="p-4">
-                                    <div className="font-bold text-gray-900">{item.name}</div>
-                                    <div className="text-xs text-gray-400">ID: #{item.id}</div>
-                                 </td>
-                                 <td className="p-4 text-sm text-gray-600">{item.category}</td>
-                                 <td className="p-4 font-medium text-gray-900">${item.price.toFixed(2)}</td>
-                                 <td className="p-4 text-sm text-gray-600">{item.stock} un.</td>
-                                 <td className="p-4">
-                                    <span className={`text-xs font-bold px-3 py-1 rounded-full uppercase ${
-                                       item.status === 'ok' ? 'bg-green-100 text-green-700' :
-                                       item.status === 'low' ? 'bg-yellow-100 text-yellow-700' :
-                                       'bg-red-100 text-red-700'
-                                    }`}>
-                                       {item.status === 'ok' ? 'Disponible' : item.status === 'low' ? 'Bajo' : 'Crítico'}
-                                    </span>
-                                 </td>
-                                 <td className="p-4 text-right">
-                                    <div className="flex justify-end gap-2">
-                                       <button className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
-                                          <Edit size={16} />
-                                       </button>
-                                       <button className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
-                                          <Trash2 size={16} />
-                                       </button>
-                                    </div>
-                                 </td>
-                              </tr>
-                           ))}
-                        </tbody>
-                     </table>
-                  </div>
+                        ))}
+                     </tbody>
+                  </table>
                </div>
             </div>
           )}
 
           {currentView !== 'overview' && currentView !== 'inventory' && (
             <div className="flex flex-col items-center justify-center h-[60vh] text-center">
-               <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center text-gray-300 mb-4">
-                  <Settings size={48} />
-               </div>
+               <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center text-gray-300 mb-4"><Settings size={48} /></div>
                <h3 className="text-xl font-bold text-gray-900">Sección en Construcción</h3>
-               <p className="text-gray-500 max-w-md mt-2">
-                  Estamos trabajando para habilitar el módulo de {currentView} lo antes posible.
-               </p>
+               <p className="text-gray-500 max-w-md mt-2">Estamos trabajando para habilitar el módulo de {currentView} lo antes posible.</p>
                <Button label="Volver al Dashboard" variant="outline" className="mt-6" onClick={() => setCurrentView('overview')} />
             </div>
           )}
-
         </div>
       </main>
     </div>

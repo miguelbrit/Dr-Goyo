@@ -162,3 +162,14 @@ model ChatMessage {
   isRead     Boolean  @default(false) @map("is_read")
   createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
 }
+
+model GlossaryItem {
+  id          String   @id @default(uuid())
+  term        String
+  type        String   // 'MEDICINE', 'PATHOLOGY', 'PRE_OP_LIST'
+  description String   @db.Text
+  category    String?
+  status      String   @default("DRAFT")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz
+}

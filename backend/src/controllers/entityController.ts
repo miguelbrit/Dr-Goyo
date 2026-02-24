@@ -3,7 +3,8 @@ import prisma from '../utils/prisma.js';
 
 export const listDoctors = async (req: Request, res: Response) => {
   try {
-    const doctors = await prisma.doctor.findMany({ 
+    const doctors = await (prisma.doctor as any).findMany({ 
+      where: { status: 'VERIFIED' },
       include: { 
         profile: true,
         availability: true
@@ -17,7 +18,7 @@ export const listDoctors = async (req: Request, res: Response) => {
 
 export const detailDoctor = async (req: Request, res: Response) => {
   try {
-    const doctor = await prisma.doctor.findUnique({
+    const doctor = await (prisma.doctor as any).findUnique({
       where: { id: req.params.id as string },
       include: { 
         profile: true,
@@ -33,7 +34,10 @@ export const detailDoctor = async (req: Request, res: Response) => {
 // Similar for Pharmacy and Laboratory
 export const listPharmacies = async (req: Request, res: Response) => {
   try {
-    const pharmacies = await prisma.pharmacy.findMany({ include: { profile: true } });
+    const pharmacies = await (prisma.pharmacy as any).findMany({ 
+      where: { status: 'VERIFIED' },
+      include: { profile: true } 
+    });
     res.json({ success: true, data: pharmacies });
   } catch (error) {
     res.status(500).json({ success: false, error: 'Error al listar farmacias' });
@@ -42,7 +46,7 @@ export const listPharmacies = async (req: Request, res: Response) => {
 
 export const detailPharmacy = async (req: Request, res: Response) => {
   try {
-    const pharmacy = await prisma.pharmacy.findUnique({
+    const pharmacy = await (prisma.pharmacy as any).findUnique({
       where: { id: req.params.id as string },
       include: { profile: true },
     });
@@ -54,7 +58,10 @@ export const detailPharmacy = async (req: Request, res: Response) => {
 
 export const listLaboratories = async (req: Request, res: Response) => {
   try {
-    const labs = await prisma.laboratory.findMany({ include: { profile: true } });
+    const labs = await (prisma.laboratory as any).findMany({ 
+      where: { status: 'VERIFIED' },
+      include: { profile: true } 
+    });
     res.json({ success: true, data: labs });
   } catch (error) {
     res.status(500).json({ success: false, error: 'Error al listar laboratorios' });
@@ -63,7 +70,7 @@ export const listLaboratories = async (req: Request, res: Response) => {
 
 export const detailLaboratory = async (req: Request, res: Response) => {
   try {
-    const lab = await prisma.laboratory.findUnique({
+    const lab = await (prisma.laboratory as any).findUnique({
       where: { id: req.params.id as string },
       include: { profile: true },
     });

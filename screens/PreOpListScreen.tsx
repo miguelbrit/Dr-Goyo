@@ -1,6 +1,7 @@
 import React from 'react';
-import { ChevronLeft, ClipboardCheck, FileText, CheckSquare, AlertTriangle } from 'lucide-react';
+import { ChevronLeft, ClipboardCheck, FileText, AlertTriangle, Loader2 } from 'lucide-react';
 import { BottomNav } from '../components/BottomNav';
+import { useGlossary } from '../hooks/useGlossary';
 
 interface PreOpListScreenProps {
   onBack: () => void;
@@ -8,35 +9,7 @@ interface PreOpListScreenProps {
 }
 
 export const PreOpListScreen: React.FC<PreOpListScreenProps> = ({ onBack, onNavigate }) => {
-  const requirements = [
-    {
-        category: "Exámenes de Laboratorio",
-        items: [
-            "Hematología Completa",
-            "Tiempos de Coagulación (PT y PTT)",
-            "Glicemia, Urea y Creatinina",
-            "Grupo Sanguíneo y Factor Rh",
-            "Prueba de VIH y VDRL"
-        ]
-    },
-    {
-        category: "Evaluación Cardiovascular",
-        items: [
-            "Electrocardiograma (ECG)",
-            "Evaluación por Cardiólogo",
-            "Rx de Tórax PA (Radiografía)"
-        ]
-    },
-    {
-        category: "Indicaciones Generales",
-        items: [
-            "Ayuno absoluto 8 horas antes de la cirugía",
-            "Suspender aspirina o anticoagulantes (según indicación)",
-            "Baño con jabón antiséptico",
-            "No llevar joyas, maquillaje ni esmalte de uñas"
-        ]
-    }
-  ];
+  const { items, loading } = useGlossary('PRE_OP_LIST');
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col pb-24">
@@ -63,24 +36,34 @@ export const PreOpListScreen: React.FC<PreOpListScreenProps> = ({ onBack, onNavi
            </p>
         </div>
 
-        {requirements.map((section, idx) => (
-            <div key={idx} className="bg-white p-5 rounded-2xl shadow-soft border border-gray-100">
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-24 text-gray-400">
+            <Loader2 size={40} className="animate-spin mb-4 text-primary opacity-20" />
+            <p className="text-sm font-medium">Cargando guías...</p>
+          </div>
+        ) : items.length > 0 ? (
+          items.map((item) => (
+            <div key={item.id} className="bg-white p-5 rounded-2xl shadow-soft border border-gray-100">
                 <div className="flex items-center gap-2 mb-4">
                     <div className="bg-orange-100 text-orange-600 p-2 rounded-lg">
                         <ClipboardCheck size={20} />
                     </div>
-                    <h3 className="font-heading font-bold text-lg text-gray-900">{section.category}</h3>
+                    <div>
+                      <h3 className="font-heading font-bold text-lg text-gray-900">{item.term}</h3>
+                      <p className="text-[10px] text-primary font-black uppercase tracking-widest">{item.category}</p>
+                    </div>
                 </div>
-                <ul className="space-y-3">
-                    {section.items.map((item, i) => (
-                        <li key={i} className="flex items-start gap-3">
-                            <CheckSquare size={18} className="text-gray-300 mt-0.5 flex-shrink-0" />
-                            <span className="text-gray-600 text-sm">{item}</span>
-                        </li>
-                    ))}
-                </ul>
+                <div className="text-gray-600 text-sm leading-relaxed whitespace-pre-line">
+                    {item.description}
+                </div>
             </div>
-        ))}
+          ))
+        ) : (
+          <div className="text-center py-20 text-gray-400 bg-white rounded-3xl border border-gray-100 border-dashed">
+            <ClipboardCheck size={48} className="mx-auto mb-4 opacity-10" />
+            <p className="text-sm font-medium">Contenido próximamente.</p>
+          </div>
+        )}
         
         <div className="bg-white p-5 rounded-2xl shadow-soft border border-gray-100 text-center">
             <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3 text-gray-400">

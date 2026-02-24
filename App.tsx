@@ -101,9 +101,17 @@ const App: React.FC = () => {
       if (storedRole) {
         setUserRole(storedRole);
         setUserName(storedName || '');
-        // Set screen immediately
-        const screen = storedRole === 'patient' ? 'home' : `${storedRole}_dashboard` as ScreenState;
-        setCurrentScreen(screen);
+        
+        // Restore Admin Session if applicable
+        if (storedRole === 'admin') {
+          console.log("[AUTH-INIT] Restoring Admin Master Session...");
+          setAdminSession({ role: 'master', email: 'admin@drgoyo.com' });
+          setCurrentScreen('admin_dashboard');
+        } else {
+          // Normal user flow
+          const screen = storedRole === 'patient' ? 'home' : `${storedRole}_dashboard` as ScreenState;
+          setCurrentScreen(screen);
+        }
       }
       fetchFullProfile();
     }
@@ -204,16 +212,28 @@ const App: React.FC = () => {
           'Paciente': 'patient',
           'Medico': 'doctor',
           'Farmacia': 'pharmacy',
-          'Laboratorio': 'lab'
+          'Laboratorio': 'lab',
+          'Admin': 'admin'
         };
         
         const role = roleMapping[type] || 'patient';
         
+        // --- VERIFICATION GUARD ---
+        let isVerified = true;
+        if (type === 'Medico') isVerified = result.data.doctor?.status === 'VERIFIED';
+        if (type === 'Farmacia') isVerified = result.data.pharmacy?.status === 'VERIFIED';
+        if (type === 'Laboratorio') isVerified = result.data.laboratory?.status === 'VERIFIED';
+
         setUserName(name);
         setUserRole(role);
         
         localStorage.setItem('user_role', role);
         localStorage.setItem('user_name', name);
+
+        if (!isVerified && (type === 'Medico' || type === 'Farmacia' || type === 'Laboratorio')) {
+          setCurrentScreen('review');
+          return;
+        }
 
         if (currentScreen === 'splash' || currentScreen === 'welcome' || (currentScreen === 'login' && !roleMapping[type])) {
           const screen = role === 'patient' ? 'home' : `${role}_dashboard` as ScreenState;
@@ -259,10 +279,11 @@ const App: React.FC = () => {
     
     await fetchFullProfile();
     
-    if (role === 'doctor' || role === 'pharmacy' || role === 'lab' || role === 'patient') {
-      setCurrentScreen(role === 'patient' ? 'home' : `${role}_dashboard` as ScreenState);
+    // Professionals go to review by default after fetch updates state
+    if (role === 'doctor' || role === 'pharmacy' || role === 'lab') {
+       setCurrentScreen('review');
     } else {
-      setCurrentScreen('review'); 
+       setCurrentScreen('home');
     }
   };
 
@@ -280,7 +301,8 @@ const App: React.FC = () => {
   // --- Internal Admin Auth ---
   const handleAdminLoginSuccess = () => {
     // Master Access granted
-    setAdminSession({ role: 'master', email: 'master@drgoyo.com' });
+    setAdminSession({ role: 'master', email: 'admin@drgoyo.com' });
+    localStorage.setItem('user_role', 'admin');
     setCurrentScreen('admin_dashboard');
   };
 
@@ -386,6 +408,7 @@ const App: React.FC = () => {
           <LoginScreen 
             onBack={goBack} 
             onLoginSuccess={(role, name) => handleLoginSuccess(role, name)} 
+            onPendingReview={() => setCurrentScreen('review')}
             onForgotPassword={() => setCurrentScreen('forgot_password')}
           />
         );
@@ -584,6 +607,7 @@ const App: React.FC = () => {
             onBack={goBack}
             onNavigateToMedicines={handleNavigateToMedicineLibrary}
             onNavigateToPathologies={handleNavigateToPathologyLibrary}
+            onNavigateToPreOp={handleNavigateToPreOp}
             onNavigate={handleBottomNav}
           />
         );
@@ -639,6 +663,9 @@ const App: React.FC = () => {
               onNavigate={handleBottomNav}
            />
         );
+
+      case 'review':
+        return <AccountReviewScreen onGoHome={handleLogout} />;
 
       case 'uikit':
         return <UIKitShowcase onBack={() => setCurrentScreen('welcome')} />;

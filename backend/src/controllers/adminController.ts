@@ -3,35 +3,96 @@ import prisma from '../utils/prisma.js';
 
 export const getStats = async (req: Request, res: Response) => {
   try {
-    const [patients, doctors, pharmacies, labs] = await Promise.all([
-      (prisma.patient as any).count(),
-      (prisma.doctor as any).count(),
-      (prisma.pharmacy as any).count(),
-      (prisma.laboratory as any).count(),
-    ]);
+    console.log('[ADMIN] Fetching global stats via Raw SQL...');
+    
+    // Using raw SQL to ensure we bypass any potential Prisma client-side filtering or type issues
+    const stats: any = await prisma.$queryRaw`
+      SELECT 
+        (SELECT COUNT(*) FROM "Patient") as patients_count,
+        (SELECT COUNT(*) FROM "Doctor") as doctors_total,
+        (SELECT COUNT(*) FROM "Doctor" WHERE status::text = 'VERIFIED') as doctors_verified,
+        (SELECT COUNT(*) FROM "Pharmacy") as pharmacies_total,
+        (SELECT COUNT(*) FROM "Pharmacy" WHERE status::text = 'VERIFIED') as pharmacies_verified,
+        (SELECT COUNT(*) FROM "Laboratory") as labs_total,
+        (SELECT COUNT(*) FROM "Laboratory" WHERE status::text = 'VERIFIED') as labs_verified
+    `;
+
+    const data = stats[0];
 
     res.json({
       success: true,
-      data: { patients, doctors, pharmacies, labs }
+      data: {
+        patients: Number(data.patients_count),
+        doctors: {
+          total: Number(data.doctors_total),
+          verified: Number(data.doctors_verified),
+          pending: Number(data.doctors_total) - Number(data.doctors_verified)
+        },
+        pharmacies: {
+          total: Number(data.pharmacies_total),
+          verified: Number(data.pharmacies_verified),
+          pending: Number(data.pharmacies_total) - Number(data.pharmacies_verified)
+        },
+        labs: {
+          total: Number(data.labs_total),
+          verified: Number(data.labs_verified),
+          pending: Number(data.labs_total) - Number(data.labs_verified)
+        }
+      }
     });
   } catch (error: any) {
-    console.error('Error fetching admin stats:', error);
-    res.status(500).json({ success: false, error: 'Error al obtener estadísticas' });
+    console.error('CRITICAL STATS ERROR:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Error al obtener estadísticas',
+      message: error.message 
+    });
   }
 };
 
 export const getPendingApprovals = async (req: Request, res: Response) => {
   try {
-    const [doctors, pharmacies, labs] = await Promise.all([
-      (prisma.doctor as any).findMany({ where: { status: 'PENDING' }, include: { profile: true } }),
-      (prisma.pharmacy as any).findMany({ where: { status: 'PENDING' }, include: { profile: true } }),
-      (prisma.laboratory as any).findMany({ where: { status: 'PENDING' }, include: { profile: true } }),
-    ]);
+    const adminUser = (req as any).user;
+    console.log(`[ADMIN] Fetching PENDING registrations. Requested by: ${adminUser?.email || 'Unknown'}`);
 
+    // Use raw SQL to bypass the enum vs text operator error
+    console.log('[DATABASE] Querying pending records via raw SQL...');
+    
+    // Fetching from Doctor table
+    const doctors: any[] = await prisma.$queryRaw`
+      SELECT d.*, 
+             p."image_url" as "imageUrl",
+             json_build_object('name', p.name, 'surname', p.surname, 'email', p.email, 'imageUrl', p."image_url") as profile
+      FROM "Doctor" d
+      JOIN "Profile" p ON d.profile_id = p.id
+      WHERE d.status::text = 'PENDING'
+    `;
+
+    // Fetching from Pharmacy table
+    const pharmacies: any[] = await prisma.$queryRaw`
+      SELECT ph.id, ph.profile_id as "profileId", ph.business_name as "businessName", ph.address, ph.city,
+             json_build_object('name', p.name, 'surname', p.surname, 'email', p.email, 'imageUrl', p."image_url") as profile
+      FROM "Pharmacy" ph
+      JOIN "Profile" p ON ph.profile_id = p.id
+      WHERE ph.status::text = 'PENDING'
+    `;
+
+    // Fetching from Laboratory table
+    const labs: any[] = await prisma.$queryRaw`
+      SELECT lb.id, lb.profile_id as "profileId", lb.business_name as "businessName", lb.address, lb.city,
+             json_build_object('name', p.name, 'surname', p.surname, 'email', p.email, 'imageUrl', p."image_url") as profile
+      FROM "Laboratory" lb
+      JOIN "Profile" p ON lb.profile_id = p.id
+      WHERE lb.status::text = 'PENDING'
+    `;
+
+    console.log(`[DATABASE] Success! -> Doctors: ${doctors.length}, Pharmacies: ${pharmacies.length}, Labs: ${labs.length}`);
+
+    // Flatten results with entityType
     const allPending = [
-      ...doctors.map((d: any) => ({ ...d, entityType: 'Medico' })),
-      ...pharmacies.map((p: any) => ({ ...p, entityType: 'Farmacia' })),
-      ...labs.map((l: any) => ({ ...l, entityType: 'Laboratorio' })),
+      ...doctors.map(d => ({ ...d, entityType: 'Medico' })),
+      ...pharmacies.map(p => ({ ...p, entityType: 'Farmacia' })),
+      ...labs.map(l => ({ ...l, entityType: 'Laboratorio' })),
     ];
 
     res.json({
@@ -39,34 +100,49 @@ export const getPendingApprovals = async (req: Request, res: Response) => {
       data: allPending
     });
   } catch (error: any) {
-    console.error('Error fetching pending approvals:', error);
-    res.status(500).json({ success: false, error: 'Error al obtener aprobaciones pendientes' });
+    console.error('CRITICAL DATABASE ERROR:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Error al obtener aprobaciones',
+      message: error.message 
+    });
   }
 };
 
 export const updateApprovalStatus = async (req: Request, res: Response) => {
-  const { entityId, entityType, status } = req.body;
+  const { entityId, entityType, status } = req.body; 
 
   if (!['VERIFIED', 'REJECTED'].includes(status)) {
     return res.status(400).json({ success: false, error: 'Estado inválido' });
   }
 
   try {
-    let result;
-    if (entityType === 'Medico') {
-      result = await (prisma.doctor as any).update({ where: { id: entityId }, data: { status } });
-    } else if (entityType === 'Farmacia') {
-      result = await (prisma.pharmacy as any).update({ where: { id: entityId }, data: { status } });
-    } else if (entityType === 'Laboratorio') {
-      result = await (prisma.laboratory as any).update({ where: { id: entityId }, data: { status } });
-    } else {
-      return res.status(400).json({ success: false, error: 'Tipo de entidad no válido' });
-    }
+    const table = entityType === 'Medico' ? 'Doctor' : 
+                  entityType === 'Farmacia' ? 'Pharmacy' : 
+                  'Laboratory';
 
-    res.json({ success: true, message: `Estado actualizado a ${status}`, data: result });
+    console.log(`[ADMIN] Updating ${table} ID: ${entityId} to status: ${status}`);
+
+    // Using executeRawUnsafe to handle the Enum type casting correctly in Postgres
+    await prisma.$executeRawUnsafe(
+      `UPDATE "${table}" SET status = $1::"VerificationStatus" WHERE id = $2`,
+      status, 
+      entityId
+    );
+
+    console.log(`[DATABASE] Successfully updated ${entityType} to ${status}`);
+
+    res.json({ 
+      success: true, 
+      message: `Estado actualizado a ${status} exitosamente.`
+    });
   } catch (error: any) {
-    console.error('Error updating approval status:', error);
-    res.status(500).json({ success: false, error: 'Error al actualizar estado' });
+    console.error('CRITICAL UPDATE ERROR:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Error al actualizar estado',
+      message: error.message
+    });
   }
 };
 
