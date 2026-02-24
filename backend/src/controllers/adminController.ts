@@ -73,7 +73,6 @@ export const updateApprovalStatus = async (req: Request, res: Response) => {
 import fs from 'fs';
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
-const pdf = require('pdf-parse');
 
 export const uploadContent = async (req: Request, res: Response) => {
   if (!req.file) {
@@ -81,6 +80,7 @@ export const uploadContent = async (req: Request, res: Response) => {
   }
 
   try {
+    const pdf = require('pdf-parse');
     const filePath = req.file.path;
     let extractedText = "";
 

@@ -49,7 +49,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
 
         <div className="w-full space-y-8">{children}</div>
         <div className="mt-12 text-[10px] text-gray-300 font-medium tracking-widest uppercase text-center">
-           Dr Goyo v1.0.27-main (Deps Synced)
+           Dr Goyo v1.0.28-main (PDF Lazy Loaded)
         </div>
       </div>
     </div>
