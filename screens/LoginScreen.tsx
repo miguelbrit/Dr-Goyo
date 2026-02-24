@@ -39,8 +39,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onBack, onLoginSuccess
       try {
         result = JSON.parse(text);
       } catch (e) {
-        console.error('Error parseando login JSON:', text);
-        throw new Error('Error de servidor (Respuesta no válida)');
+        console.group('CRITICAL: Server returned invalid JSON');
+        console.error('Status:', response.status);
+        console.error('Response Text:', text);
+        console.groupEnd();
+        throw new Error(`Error de servidor (${response.status}): El servidor no respondió en el formato esperado.`);
       }
 
       if (!response.ok || !result.success) {

@@ -172,11 +172,16 @@ export const login = async (req: Request, res: Response) => {
       } 
     });
   } catch (error: any) {
-    console.error('Login Error:', error);
+    console.error('--- LOGIN ERROR ---');
+    console.error('Error Type:', error.constructor?.name || typeof error);
+    console.error('Stack:', error.stack);
+    console.error('Message:', error.message);
+    
     res.status(500).json({ 
       success: false, 
       error: 'Error en el servidor',
-      message: error.message || 'Hubo un problema al procesar tu inicio de sesión'
+      message: error.message || 'Hubo un problema al procesar tu inicio de sesión',
+      debug_hint: 'Check server logs in Vercel for the full stack trace.'
     });
   }
 };
