@@ -5,22 +5,35 @@ import { Pool } from 'pg';
 
 /**
  * PRISMA ARCHITECT DIAGNOSIS:
- * If DATABASE_URL is missing, we must catch it early to avoid process crashes.
+ * Robust database initialization for Vercel (Serverless).
+ * Handling SSL for Supabase connection.
  */
 
-const connectionString = process.env.DATABASE_URL;
+const connectionString = process.env.DATABASE_URL?.trim();
 
 if (!connectionString) {
-  console.error("FATAL: DATABASE_URL is not defined.");
+  console.error("FATAL: DATABASE_URL is not defined in environment variables.");
 }
 
-// Fallback to avoid immediate crash on initialization, although queries will fail
-const pool = new Pool(connectionString ? { connectionString } : { connectionString: 'postgresql://invalid:invalid@localhost:5432/invalid' });
+// Configuration for pg Pool with SSL support (critical for Vercel -> Supabase)
+const poolConfig = {
+  connectionString: connectionString || 'postgresql://invalid:invalid@localhost:5432/invalid',
+  ssl: connectionString?.includes('localhost') ? false : { 
+    rejectUnauthorized: false // Required for many cloud databases like Supabase
+  },
+  max: 1 // In serverless, we generally want small pools per invocation
+};
+
+const pool = new Pool(poolConfig);
+
+pool.on('error', (err) => {
+  console.error('[Postgres Pool Error]:', err.message);
+});
 
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ 
   adapter,
-  log: ['query', 'info', 'warn', 'error']
+  log: ['info', 'warn', 'error']
 });
 
 export default prisma;
