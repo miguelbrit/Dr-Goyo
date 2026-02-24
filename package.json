@@ -1,7 +1,7 @@
 {
   "name": "app-dr.-goyo",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.27",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -12,18 +12,21 @@
   "dependencies": {
     "@prisma/adapter-pg": "^7.4.1",
     "@prisma/client": "^7.4.1",
+    "@supabase/supabase-js": "^2.97.0",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
     "lucide-react": "^0.563.0",
-    "multer": "^1.4.4",
+    "multer": "^2.0.2",
+    "pdf-parse": "^2.4.5",
     "pg": "^8.18.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
-    "@supabase/supabase-js": "^2.97.0",
-    "uuid": "^13.0.0"
+    "uuid": "^13.0.0",
+    "@types/multer": "^2.0.0",
+    "@types/uuid": "^10.0.0"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.2.0",
@@ -31,14 +34,13 @@
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
-    "@types/multer": "^1.4.12",
     "@types/node": "^22.14.0",
     "@types/pg": "^8.16.0",
-    "@types/uuid": "^10.0.0",
     "@vitejs/plugin-react": "^5.0.0",
     "prisma": "^7.4.1",
     "tailwindcss": "^4.2.0",
     "typescript": "~5.8.2",
-    "vite": "^6.2.0"
+    "vite": "^6.2.0",
+    "tsx": "^4.21.0"
   }
 }
