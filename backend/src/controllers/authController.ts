@@ -213,7 +213,8 @@ export const login = async (req: Request, res: Response) => {
       success: false, 
       error: 'Error en el servidor',
       message: error.message || 'Hubo un problema al procesar tu inicio de sesión',
-      debug_hint: 'Check server logs in Vercel for the full stack trace.'
+      stack: process.env.NODE_ENV === 'production' ? undefined : error.stack,
+      debug_hint: 'Verify Vercel environment variables and database connectivity.'
     });
   }
 };
@@ -425,8 +426,14 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
     });
     res.status(500).json({ 
       success: false, 
-      error: 'Error al actualizar perfil',
-      message: error.message || 'Error desconocido'
+      error: 'Error interno del servidor (500)',
+      message: error.message || 'Error desconocido al actualizar perfil',
+      technical_details: {
+        code: error.code,
+        meta: error.meta,
+        stack: error.stack,
+        cause: error.cause
+      }
     });
   }
 };

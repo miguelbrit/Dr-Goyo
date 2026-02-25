@@ -6,6 +6,7 @@ import {
 import { Input } from './Input';
 import { Button } from './Button';
 import { Avatar } from './Avatar';
+import { supabase } from '../supabase';
 
 interface ProfileDetailsProps {
   userProfile?: any;
@@ -96,64 +97,70 @@ export const ProfileDetails: React.FC<ProfileDetailsProps> = ({ userProfile, onU
     setUploading(true);
     setMessage(null);
 
-    // Immediate preview
-    const previewUrl = URL.createObjectURL(file);
-    setFormData(prev => ({ ...prev, imageUrl: previewUrl }));
-
-    const formDataUpload = new FormData();
-    formDataUpload.append('image', file);
-
     try {
-      const response = await fetch('/api/users/upload-image', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: formDataUpload
-      });
-      
-      const text = await response.text();
-      let data;
-      try {
-        data = JSON.parse(text);
-      } catch (e) {
-        console.error('Error parseando JSON:', text);
-        throw new Error('El servidor no respondió correctamente. Revisa la consola.');
-      }
+      // 1. Verificar Sesión
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) throw new Error('AUTH_SESSION_EXPIRED');
 
-      if (data.success) {
-        // Actualizar con la URL final del servidor
-        const finalImageUrl = data.imageUrl;
-        setFormData(prev => {
-          const updated = { ...prev, imageUrl: finalImageUrl };
-          
-          // Guardar automáticamente para persistir la relación
-          fetch('/api/users/update-profile', {
-              method: 'PUT',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-              },
-              body: JSON.stringify(updated)
-          }).then(() => {
-            if (onUpdate) onUpdate();
-          });
+      const fileExt = file.name.split('.').pop();
+      const fileName = `avatar-${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
+      const filePath = `${user.id}/${fileName}`;
+      const bucketName = 'profiles';
 
-          return updated;
+      console.log(`[DEBUG] Subiendo avatar de paciente a: ${filePath}`);
+
+      // 2. Subida a Supabase Storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from(bucketName)
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true
         });
-        
-        setMessage({ type: 'success', text: 'Foto actualizada correctamente' });
-      } else {
-        throw new Error(data.error);
-      }
-    } catch (err: any) {
-      setMessage({ type: 'error', text: err.message || 'Error al subir imagen' });
-      // Revertir a la imagen anterior si falla si es necesario, 
-      // pero el prop userProfile lo arreglará al refrescar
+
+      if (uploadError) throw uploadError;
+
+      // 3. Obtener URL Pública
+      const { data: { publicUrl } } = supabase.storage
+        .from(bucketName)
+        .getPublicUrl(filePath);
+
+      // 4. Actualizar estado local
+      setFormData(prev => ({ ...prev, imageUrl: publicUrl }));
+
+      // 5. Persistir en Base de Datos (Estrategia Frontend-first)
+      const { error: dbError } = await supabase
+        .from('Profile')
+        .update({ image_url: publicUrl })
+        .eq('id', user.id);
+
+      if (dbError) throw dbError;
+
+      // 6. Sincronización con Backend (Opcional)
+      try {
+        const token = localStorage.getItem('token');
+        await fetch('/api/users/update-profile', {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ imageUrl: publicUrl })
+        });
+      } catch (e) {}
+
       if (onUpdate) onUpdate();
+      setMessage({ type: 'success', text: 'Foto actualizada correctamente' });
+    } catch (err: any) {
+      console.error('[CRITICAL] Error en subida de paciente:', err);
+      const message = err.message || '';
+      if (message === 'AUTH_SESSION_EXPIRED') {
+        setMessage({ type: 'error', text: 'Tu sesión ha expirado. Por favor, vuelve a iniciar sesión.' });
+      } else {
+        setMessage({ type: 'error', text: `Error de subida: ${message}` });
+      }
     } finally {
       setUploading(false);
-      URL.revokeObjectURL(previewUrl); 
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
