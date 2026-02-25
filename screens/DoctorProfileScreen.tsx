@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
   ChevronLeft, MessageCircle, MapPin, Award, Users, Star, 
-  CheckCircle2, Loader2, AlertCircle 
+  CheckCircle2, Loader2, AlertCircle, User 
 } from 'lucide-react';
 import { Doctor } from '../types';
 import { Button } from '../components/Button';
@@ -26,6 +26,15 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Get Initials for Placeholder
+  const initials = doctor.name
+    .split(' ')
+    .filter(n => !n.toLowerCase().includes('.') && n.length > 0)
+    .slice(0, 2)
+    .map(n => n[0])
+    .join('')
+    .toUpperCase();
 
   const handleSlotSelect = (date: Date, time: string) => {
     setSelectedDate(date);
@@ -110,8 +119,15 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
       {/* Profile Info Overlay */}
       <div className="px-6 -mt-20 relative z-10 max-w-xl mx-auto">
          <div className="flex justify-between items-end">
-            <div className="w-28 h-28 rounded-[2rem] border-4 border-white shadow-xl overflow-hidden bg-white ring-8 ring-primary/5">
-               <img src={doctor.image} alt={doctor.name} className="w-full h-full object-cover" />
+            <div className="w-28 h-28 rounded-[2rem] border-4 border-white shadow-xl overflow-hidden bg-white ring-8 ring-primary/5 flex items-center justify-center">
+               {doctor.image ? (
+                 <img src={doctor.image} alt={doctor.name} className="w-full h-full object-cover" />
+               ) : (
+                 <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex flex-col items-center justify-center text-gray-400 relative">
+                    <User size={48} className="opacity-40" />
+                    <span className="absolute bottom-2 text-xs font-bold opacity-30">{initials}</span>
+                 </div>
+               )}
             </div>
             <div className="mb-4">
                <span className="bg-primary text-white font-bold text-xs px-4 py-1.5 rounded-full shadow-lg shadow-primary/20">

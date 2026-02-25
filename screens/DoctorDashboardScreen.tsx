@@ -6,7 +6,6 @@ import {
 import { Avatar } from '../components/Avatar';
 import { Button } from '../components/Button';
 import { DoctorProfileDetails } from '../components/DoctorProfileDetails';
-import { ScheduleConfig } from '../components/ScheduleConfig';
 import { formatDateTime12h } from '../utils/formatters';
 
 interface DoctorDashboardProps {
@@ -16,7 +15,7 @@ interface DoctorDashboardProps {
   onProfileUpdate?: () => void;
 }
 
-type DashboardView = 'overview' | 'appointments' | 'patients' | 'calendar' | 'chat' | 'earnings' | 'settings';
+type DashboardView = 'overview' | 'appointments' | 'patients' | 'chat' | 'earnings' | 'settings';
 
 export const DoctorDashboardScreen: React.FC<DoctorDashboardProps> = ({ onLogout, userName: initialUserName = "Doctor", userProfile: initialUserProfile }) => {
   const [currentView, setCurrentView] = useState<DashboardView>('overview');
@@ -256,7 +255,7 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardProps> = ({ onLogout
                 </div>
                 <p className="text-xs text-primary font-medium">{specialty}</p>
               </div>
-              <Avatar src={profile?.imageUrl || doctorData.imageUrl || `https://i.pravatar.cc/150?u=${userName}`} alt="Dr" size="md" />
+              <Avatar src={profile?.imageUrl || doctorData.imageUrl} alt="Dr" size="md" />
             </div>
           </div>
         </header>
@@ -519,21 +518,6 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardProps> = ({ onLogout
                   <p className="text-gray-500">Administra tu información profesional y foto de perfil.</p>
                </div>
                <DoctorProfileDetails userProfile={profile} onUpdate={fetchProfile} />
-            </div>
-          )}
-
-          {currentView === 'calendar' && (
-            <div className="animate-in fade-in slide-in-from-bottom-4">
-               <div className="mb-6">
-                  <h2 className="text-2xl font-bold text-gray-900 font-heading">Gestión de Agenda</h2>
-                  <p className="text-gray-500">Configura tus horarios base y slots de consulta.</p>
-               </div>
-               <ScheduleConfig 
-                 doctorId={doctorData.id} 
-                 initialAvailability={doctorData.availability}
-                 initialSlotDuration={doctorData.slotDuration}
-                 onSave={fetchProfile} 
-               />
             </div>
           )}
 

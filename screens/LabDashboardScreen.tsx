@@ -200,7 +200,7 @@ export const LabDashboardScreen: React.FC<LabDashboardProps> = ({ onLogout, user
               <span className="absolute top-1.5 right-2 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
             </button>
             <div className="flex items-center gap-3 border-l border-gray-200 pl-6">
-              <Avatar src={profile?.imageUrl || "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?auto=format&fit=crop&q=80&w=200"} alt="Lab" size="md" />
+              <Avatar src={profile?.imageUrl} alt="Lab" size="md" />
             </div>
           </div>
         </header>

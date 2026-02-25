@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Filter, ChevronLeft, Search, MapPin, X } from 'lucide-react';
 import { DoctorCard } from '../components/DoctorCard';
-import { Doctor, Article } from '../types';
+import { Article, Doctor } from '../types';
+import { supabase } from '../supabase';
 import { BottomNav } from '../components/BottomNav';
 import { Pagination } from '../components/Pagination';
 import { Carousel, CarouselItem } from '../components/Carousel';
@@ -180,16 +181,70 @@ export const DoctorListScreen: React.FC<DoctorListScreenProps> = ({
 
   useEffect(() => {
     fetchDoctors();
+
+    // REALTIME SUBSCRIPTION: Listen for changes in Doctor and Profile tables
+    // to ensure changes (photo, specialty, bio) reflect instantly.
+    console.log("[SYNC] Enabling Realtime subscriptions for Doctor Directory...");
+    
+    const doctorChannel = supabase
+      .channel('directory-sync')
+      .on('postgres_changes', { 
+        event: 'UPDATE', 
+        schema: 'public', 
+        table: 'Doctor' 
+      }, (payload) => {
+        console.log("[SYNC] Doctor profile data updated:", payload.new.id);
+        // We could re-fetch all, but for a smoother UX we update the specific item
+        // or trigger a targeted re-fetch if needed. Here we trigger a refresh to ensure joins are correct.
+        fetchDoctors();
+      })
+      .on('postgres_changes', { 
+        event: 'UPDATE', 
+        schema: 'public', 
+        table: 'Profile' 
+      }, (payload) => {
+        console.log("[SYNC] User profile (name/image) updated:", payload.new.id);
+        fetchDoctors();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(doctorChannel);
+    };
   }, []);
 
   const fetchDoctors = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/entities/doctors');
-      const result = await response.json();
-      if (result.success) {
-        // Map backend entities to frontend Doctor type
-        const mappedDoctors = result.data.map((d: any) => ({
+      const cacheBuster = new Date().getTime();
+      console.log(`[DEBUG] Syncing doctors directory (Cache-Buster: ${cacheBuster})`);
+      
+      // Explicit selection of all relevant fields including joined Profile data.
+      // We use the exact column names from the database (image_url, etc.)
+      const { data: rawData, error } = await supabase
+        .from('Doctor')
+        .select(`
+          id,
+          specialty,
+          bio,
+          consultationPrice,
+          experienceYears,
+          city,
+          address,
+          status,
+          profile:Profile (
+            id,
+            name,
+            surname,
+            image_url
+          )
+        `)
+        .or('status.eq.APPROVED,status.eq.VERIFIED');
+
+      if (error) throw error;
+
+      if (rawData && Array.isArray(rawData)) {
+        const mappedDoctors = rawData.map((d: any) => ({
           id: d.id,
           name: `${d.profile?.name || ''} ${d.profile?.surname || ''}`.trim() || 'Médico',
           specialty: d.specialty || 'General',
@@ -198,21 +253,27 @@ export const DoctorListScreen: React.FC<DoctorListScreenProps> = ({
           rating: 5.0, // Default for new doctors
           reviews: 0,
           price: d.consultationPrice || 0,
-          image: d.profile?.imageUrl || 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&q=80&w=300&h=300',
-          nextAvailable: d.status === 'VERIFIED' ? 'Disponible' : 'En Verificación',
+          // Removing the default placeholder. If the doctor hasn't uploaded a photo, 
+          // we pass null to allow the UI to render a silhouette/icon.
+          image: d.profile?.image_url 
+            ? `${d.profile.image_url}${d.profile.image_url.includes('?') ? '&' : '?'}t=${cacheBuster}` 
+            : null,
+          nextAvailable: (d.status === 'APPROVED' || d.status === 'VERIFIED') ? 'Disponible' : 'En Verificación',
           about: d.bio || `Especialista con ${d.experienceYears || 0} años de experiencia en ${d.specialty || 'medicina'}.`,
           experience: d.experienceYears || 0,
           patients: 0,
-          isFeatured: d.status === 'VERIFIED',
+          isFeatured: (d.status === 'APPROVED' || d.status === 'VERIFIED'),
           availability: d.availability || []
         }));
-        // Show only real ones
+        
+        console.log(`[SYNC] ${mappedDoctors.length} doctors updated in state. Imágenes:`, 
+          mappedDoctors.map(m => m.image ? 'URL' : 'NULL'));
         setDoctors(mappedDoctors);
       } else {
         setDoctors([]);
       }
-    } catch (err) {
-      console.error("Error fetching doctors:", err);
+    } catch (err: any) {
+      console.error("Error fetching doctors:", err.message);
       setDoctors([]);
     } finally {
       setLoading(false);
@@ -342,7 +403,8 @@ export const DoctorListScreen: React.FC<DoctorListScreenProps> = ({
           </>
         ) : (
           <div className="text-center py-12 text-gray-light">
-            <p>No se encontraron médicos con estos filtros.</p>
+            <p>Aún no hay médicos disponibles en tu zona.</p>
+            <p className="text-xs mt-1">¡Pronto más profesionales!</p>
             <button 
               onClick={() => {
                 setSelectedSpecialty('');

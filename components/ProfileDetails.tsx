@@ -37,19 +37,24 @@ export const ProfileDetails: React.FC<ProfileDetailsProps> = ({ userProfile, onU
     allergies: '',
   });
 
-  // Track if we have initialized state from props
-  const initialized = useRef(false);
 
-  // Sync state only when profile is first loaded
+  // Track if we have initialized state for the current profile to avoid overwriting user input
+  const lastProfileId = useRef<string | null>(null);
+
+  // Sync state ONLY when a NEW profile is loaded (e.g., after login or initial load)
   useEffect(() => {
-    if (userProfile && !initialized.current) {
-       setFormData({
+    if (userProfile && lastProfileId.current !== userProfile.id) {
+      setFormData({
         name: userProfile.name || '',
         surname: userProfile.surname || '',
         email: userProfile.email || '',
         imageUrl: userProfile.imageUrl || '',
         phone: userProfile.patient?.phone || '',
-        birthDate: userProfile.patient?.birthDate ? new Date(userProfile.patient.birthDate).toISOString().split('T')[0] : '',
+        birthDate: (() => {
+          if (!userProfile.patient?.birthDate) return '';
+          const d = new Date(userProfile.patient.birthDate);
+          return isNaN(d.getTime()) ? '' : d.toISOString().split('T')[0];
+        })(),
         gender: userProfile.patient?.gender || '',
         weight: userProfile.patient?.weight || '',
         height: userProfile.patient?.height || '',
@@ -59,7 +64,7 @@ export const ProfileDetails: React.FC<ProfileDetailsProps> = ({ userProfile, onU
         bloodType: userProfile.patient?.bloodType || '',
         allergies: userProfile.patient?.allergies || '',
       });
-      initialized.current = true;
+      lastProfileId.current = userProfile.id;
     }
   }, [userProfile]);
 
@@ -90,6 +95,11 @@ export const ProfileDetails: React.FC<ProfileDetailsProps> = ({ userProfile, onU
 
     setUploading(true);
     setMessage(null);
+
+    // Immediate preview
+    const previewUrl = URL.createObjectURL(file);
+    setFormData(prev => ({ ...prev, imageUrl: previewUrl }));
+
     const formDataUpload = new FormData();
     formDataUpload.append('image', file);
 
@@ -112,25 +122,38 @@ export const ProfileDetails: React.FC<ProfileDetailsProps> = ({ userProfile, onU
       }
 
       if (data.success) {
-        setFormData(prev => ({ ...prev, imageUrl: data.imageUrl }));
-        // Guardar automáticamente la URL de la imagen para que sea persistente
-        await fetch('/api/users/update-profile', {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${localStorage.getItem('token')}`
-            },
-            body: JSON.stringify({ ...formData, imageUrl: data.imageUrl })
+        // Actualizar con la URL final del servidor
+        const finalImageUrl = data.imageUrl;
+        setFormData(prev => {
+          const updated = { ...prev, imageUrl: finalImageUrl };
+          
+          // Guardar automáticamente para persistir la relación
+          fetch('/api/users/update-profile', {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+              },
+              body: JSON.stringify(updated)
+          }).then(() => {
+            if (onUpdate) onUpdate();
+          });
+
+          return updated;
         });
-        if (onUpdate) onUpdate();
+        
         setMessage({ type: 'success', text: 'Foto actualizada correctamente' });
       } else {
         throw new Error(data.error);
       }
     } catch (err: any) {
       setMessage({ type: 'error', text: err.message || 'Error al subir imagen' });
+      // Revertir a la imagen anterior si falla si es necesario, 
+      // pero el prop userProfile lo arreglará al refrescar
+      if (onUpdate) onUpdate();
     } finally {
       setUploading(false);
+      URL.revokeObjectURL(previewUrl); 
     }
   };
 

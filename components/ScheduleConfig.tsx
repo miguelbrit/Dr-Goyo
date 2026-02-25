@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Calendar as CalendarIcon, Clock, Check, Save, Loader2, AlertCircle, 
-  ChevronLeft, ChevronRight, Copy, Trash2, Plus
+  ChevronLeft, ChevronRight, Trash2, Plus
 } from 'lucide-react';
 import { Button } from './Button';
 
@@ -17,6 +17,7 @@ interface ScheduleConfigProps {
   initialAvailability?: ScheduleSlot[];
   initialSlotDuration?: number;
   onSave?: () => void;
+  onChange?: (data: { availability: ScheduleSlot[], slotDuration: number }) => void;
 }
 
 // Helper to generate slots
@@ -52,7 +53,8 @@ export const ScheduleConfig: React.FC<ScheduleConfigProps> = ({
   doctorId, 
   initialAvailability = [], 
   initialSlotDuration = 30,
-  onSave 
+  onSave,
+  onChange
 }) => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
@@ -74,15 +76,14 @@ export const ScheduleConfig: React.FC<ScheduleConfigProps> = ({
     return defaultAvailability;
   });
 
-  const [selectedDays, setSelectedDays] = useState<number[]>([]);
-  const [patternStart, setPatternStart] = useState('08:00');
-  const [patternEnd, setPatternEnd] = useState('17:00');
-
-  const [currentMonth, setCurrentMonth] = useState(new Date());
-
   const daysLabels = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
-  // --- Fix: Prevent default logic and state management ---
+  // Notify parent of changes
+  useEffect(() => {
+    if (onChange) {
+      onChange({ availability, slotDuration });
+    }
+  }, [availability, slotDuration]);
 
   const toggleDay = (e: React.MouseEvent, day: number) => {
     e.preventDefault();
@@ -92,150 +93,19 @@ export const ScheduleConfig: React.FC<ScheduleConfigProps> = ({
     ));
   };
 
-  const toggleSelectedDay = (e: React.MouseEvent, dayIndex: number) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setSelectedDays(prev => 
-      prev.includes(dayIndex) ? prev.filter(d => d !== dayIndex) : [...prev, dayIndex]
-    );
-  };
-
   const updateTime = (day: number, field: 'startTime' | 'endTime', value: string) => {
     setAvailability(prev => prev.map(a => 
       a.dayOfWeek === day ? { ...a, [field]: value } : a
     ));
   };
 
-  const applyPattern = (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (selectedDays.length === 0) {
-      setMessage({ type: 'error', text: 'Selecciona al menos un día para aplicar el patrón' });
-      return;
-    }
-    setAvailability(prev => prev.map(a => 
-      selectedDays.includes(a.dayOfWeek) 
-        ? { ...a, startTime: patternStart, endTime: patternEnd, isActive: true } 
-        : a
-    ));
-    setSelectedDays([]);
-    setMessage({ type: 'success', text: 'Patrón aplicado correctamente' });
-    setTimeout(() => setMessage(null), 2000);
-  };
-
-  const handleSave = async (e?: React.MouseEvent | React.FormEvent) => {
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-    
-    setLoading(true);
-    setMessage(null);
-
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/users/update-profile', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          slotDuration,
-          availability: availability.map(a => ({
-            dayOfWeek: a.dayOfWeek,
-            startTime: a.startTime,
-            endTime: a.endTime,
-            isActive: a.isActive
-          }))
-        })
-      });
-
-      const result = await response.json();
-      if (result.success) {
-        setMessage({ type: 'success', text: 'Agenda actualizada correctamente' });
-        if (onSave) onSave();
-      } else {
-        throw new Error(result.error || 'Error al guardar');
-      }
-    } catch (err: any) {
-      setMessage({ type: 'error', text: err.message });
-    } finally {
-      setLoading(false);
-      setTimeout(() => setMessage(null), 3000);
-    }
-  };
-
   // Calendar logic
-  const getDaysInMonth = (date: Date) => {
-    const year = date.getFullYear();
-    const month = date.getMonth();
-    const days = new Date(year, month + 1, 0).getDate();
-    const firstDay = new Date(year, month, 1).getDay();
-    return { days, firstDay };
-  };
 
-  const { days, firstDay } = getDaysInMonth(currentMonth);
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500" onClick={(e) => e.stopPropagation()}>
       
-      {/* 1. Pattern Application */}
-      <section className="bg-gradient-to-br from-secondary/5 to-primary/5 p-6 rounded-3xl border border-primary/10">
-        <h3 className="font-heading font-bold text-lg text-gray-900 mb-4 flex items-center gap-2">
-          <Copy size={20} className="text-primary" /> Aplicar Patrón Horario
-        </h3>
-        <p className="text-sm text-gray-500 mb-6">Configura varios días rápidamente con el mismo rango de horas.</p>
-        
-        <div className="space-y-6">
-          <div>
-            <label className="block text-xs font-bold text-gray-400 uppercase mb-3">Selecciona los días</label>
-            <div className="flex flex-wrap gap-2">
-              {daysLabels.map((label, i) => (
-                <button
-                  key={label}
-                  type="button"
-                  onClick={(e) => toggleSelectedDay(e, i)}
-                  className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
-                    selectedDays.includes(i) ? 'bg-primary text-white' : 'bg-white text-gray-500 border border-gray-100 hover:border-primary/30'
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Hora Inicio</label>
-              <input 
-                type="time" 
-                value={patternStart}
-                onChange={(e) => setPatternStart(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl bg-white border border-gray-100 outline-none focus:ring-2 focus:ring-primary/20"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Hora Fin</label>
-              <input 
-                type="time" 
-                value={patternEnd}
-                onChange={(e) => setPatternEnd(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl bg-white border border-gray-100 outline-none focus:ring-2 focus:ring-primary/20"
-              />
-            </div>
-          </div>
-
-          <Button 
-            label="Aplicar Horario a Seleccionados" 
-            variant="outline" 
-            fullWidth 
-            type="button"
-            onClick={applyPattern}
-            icon={Check}
-          />
-        </div>
-      </section>
 
       {/* 3. Detailed Weekly Schedule */}
       <section className="bg-white p-6 rounded-3xl shadow-soft border border-gray-100">
@@ -321,20 +191,6 @@ export const ScheduleConfig: React.FC<ScheduleConfigProps> = ({
           <span className="font-medium">{message.text}</span>
         </div>
       )}
-
-      {/* Save Button */}
-      <div className="sticky bottom-0 bg-gray-bg/80 backdrop-blur-sm pt-4 pb-2 z-10">
-        <Button 
-          label={loading ? "Guardando..." : "Guardar Cambios de Agenda"} 
-          fullWidth 
-          type="button"
-          onClick={handleSave}
-          disabled={loading}
-          icon={loading ? Loader2 : Save}
-          className="shadow-xl shadow-primary/30"
-        />
-      </div>
-
     </div>
   );
 };

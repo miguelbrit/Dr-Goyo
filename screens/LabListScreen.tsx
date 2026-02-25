@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Filter, ChevronLeft, Search, MapPin, X } from 'lucide-react';
 import { LaboratoryCard } from '../components/LaboratoryCard';
 import { Laboratory, LabService, Article } from '../types';
+import { supabase } from '../supabase';
 import { BottomNav } from '../components/BottomNav';
 import { Pagination } from '../components/Pagination';
 import { Carousel, CarouselItem } from '../components/Carousel';
@@ -124,26 +125,36 @@ export const LabListScreen: React.FC<LabListScreenProps> = ({
     const fetchLabs = async () => {
       try {
         setLoading(true);
-        const response = await fetch('/api/entities/laboratories');
-        const result = await response.json();
-        if (result.success && result.data.length > 0) {
-          const mapped = result.data.map((l: any) => ({
+        console.log("[DEBUG] Fetching laboratories from Supabase...");
+        
+        const { data: rawData, error } = await supabase
+          .from('Laboratory')
+          .select(`
+            *,
+            profile:Profile (*)
+          `)
+          .or('status.eq.APPROVED,status.eq.VERIFIED');
+
+        if (error) throw error;
+
+        if (rawData && rawData.length > 0) {
+          const mapped = rawData.map((l: any) => ({
             id: l.id,
             name: l.profile?.name || l.name,
-            location: l.city || 'Venezuela',
+            location: l.city || l.profile?.city || 'Venezuela',
             address: l.address || 'Consultar dirección',
             rating: 4.7, 
             reviews: Math.floor(Math.random() * 150),
             distance: '--',
             image: l.profile?.imageUrl || 'https://images.unsplash.com/photo-1579154204601-01588f351e67?auto=format&fit=crop&q=80&w=400',
-            services: SERVICES, // Placeholder services
+            services: SERVICES, 
             hours: `${l.openingHours || '07:00'} - ${l.closingHours || '18:00'}`,
             phone: l.phone || 'N/A'
           }));
           setLabs(mapped);
         }
-      } catch (err) {
-        console.error("Error loading labs:", err);
+      } catch (err: any) {
+        console.error("Error loading labs:", err.message);
       } finally {
         setLoading(false);
       }

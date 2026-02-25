@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Filter, ChevronLeft, Search, MapPin, X } from 'lucide-react';
 import { PharmacyCard } from '../components/PharmacyCard';
 import { Pharmacy, Medicament, Article } from '../types';
+import { supabase } from '../supabase';
 import { BottomNav } from '../components/BottomNav';
 import { Pagination } from '../components/Pagination';
 import { Carousel, CarouselItem } from '../components/Carousel';
@@ -134,27 +135,37 @@ export const PharmacyListScreen: React.FC<PharmacyListScreenProps> = ({
     const fetchPharmacies = async () => {
       try {
         setLoading(true);
-        const response = await fetch('/api/entities/pharmacies');
-        const result = await response.json();
-        if (result.success && result.data.length > 0) {
-          const mapped = result.data.map((p: any) => ({
+        console.log("[DEBUG] Fetching pharmacies from Supabase...");
+        
+        const { data: rawData, error } = await supabase
+          .from('Pharmacy')
+          .select(`
+            *,
+            profile:Profile (*)
+          `)
+          .or('status.eq.APPROVED,status.eq.VERIFIED');
+
+        if (error) throw error;
+
+        if (rawData && rawData.length > 0) {
+          const mapped = rawData.map((p: any) => ({
             id: p.id,
             name: p.profile?.name || p.name,
-            location: p.city || 'Venezuela',
+            location: p.city || p.profile?.city || 'Venezuela',
             address: p.address || 'Consultar dirección',
             distance: '--',
             rating: 4.6, 
             reviews: Math.floor(Math.random() * 200),
             isOpen: true,
             image: p.profile?.imageUrl || 'https://images.unsplash.com/photo-1576602976047-174e57a47881?auto=format&fit=crop&q=80&w=400',
-            inventory: [...COMMON_MEDS], // Placeholder inventory
+            inventory: [...COMMON_MEDS], 
             hours: `${p.openingHours || '08:00'} - ${p.closingHours || '20:00'}`,
             phone: p.phone || 'N/A'
           }));
           setPharmacies(mapped);
         }
-      } catch (err) {
-        console.error("Error loading pharmacies:", err);
+      } catch (err: any) {
+        console.error("Error loading pharmacies:", err.message);
       } finally {
         setLoading(false);
       }

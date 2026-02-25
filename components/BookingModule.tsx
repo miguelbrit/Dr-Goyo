@@ -61,14 +61,26 @@ export const BookingModule: React.FC<BookingModuleProps> = ({
     return doctorData.availability.find(a => a.dayOfWeek === date.getDay() && a.isActive);
   };
 
+  // NORMALIZE DATE FOR COMPARISON (YYYY-MM-DD)
+  const getFormattedDate = (date: Date) => date.toISOString().split('T')[0];
+
   const generateTimeSlots = (date: Date) => {
     const config = getDayAvailability(date);
-    if (!config || !doctorData) return [];
+    
+    // DEBUG LOGS AS REQUESTED
+    console.log('[DEBUG] Día seleccionado (Paso 1):', getFormattedDate(date), `(${daysInWeek[date.getDay()]})`);
+    console.log('[DEBUG] Todos los datos de disponibilidad (Paso 2):', doctorData?.availability);
+
+    if (!config || !doctorData) {
+      console.log('[DEBUG] Horas resultantes tras filtrar (Paso 3): [] (Sin configuración para este día)');
+      return [];
+    }
 
     const slots: string[] = [];
     const [startH, startM] = config.startTime!.split(':').map(Number);
     const [endH, endM] = config.endTime!.split(':').map(Number);
     
+    // Ensure we start from a clean slate for the selected day
     let current = new Date(date);
     current.setHours(startH, startM, 0, 0);
     
@@ -76,13 +88,21 @@ export const BookingModule: React.FC<BookingModuleProps> = ({
     end.setHours(endH, endM, 0, 0);
 
     const duration = doctorData.slotDuration;
+    const now = new Date();
 
     while (current < end) {
-      if (current > new Date()) {
-        const timeStr = current.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }).toUpperCase();
+      // Basic check: if today, only show future slots
+      if (current.getTime() > now.getTime()) {
+        const timeStr = current.toLocaleTimeString('en-US', { 
+          hour: '2-digit', 
+          minute: '2-digit', 
+          hour12: true 
+        }).toUpperCase();
         
+        // Match existing appointments (Conflict detection)
         const isTaken = appointments.some(appt => {
           const apptDate = new Date(appt.date);
+          // Normalize comparison at the timestamp level
           return apptDate.getTime() === current.getTime() && appt.status !== 'cancelled';
         });
 
@@ -92,11 +112,14 @@ export const BookingModule: React.FC<BookingModuleProps> = ({
       }
       current.setMinutes(current.getMinutes() + duration);
     }
+
+    console.log('[DEBUG] Horas resultantes tras filtrar (Paso 3):', slots);
     return slots;
   };
 
   const next14Days = Array.from({ length: 14 }).map((_, i) => {
     const d = new Date();
+    d.setHours(0, 0, 0, 0); // Normalize to start of day for cleaner iteration
     d.setDate(d.getDate() + i);
     return d;
   });

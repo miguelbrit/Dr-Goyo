@@ -186,7 +186,7 @@ const App: React.FC = () => {
   const fetchFullProfile = async () => {
     try {
       const token = localStorage.getItem('token');
-      if (!token) return;
+      if (!token) return false;
 
       console.log('Fetching full profile...');
       const response = await fetch('/api/users/profile', {
@@ -195,11 +195,11 @@ const App: React.FC = () => {
       
       if (!response.ok) {
         console.warn(`Profile fetch failed with status: ${response.status}`);
-        // Only logout if it's a 401 and we are not expecting it
-        if (response.status === 401 && (currentScreen === 'splash')) {
+        // Handle unauthorized access by logging out
+        if (response.status === 401) {
           handleLogout();
         }
-        return;
+        return true; 
       }
 
       const result = await response.json();
@@ -232,12 +232,13 @@ const App: React.FC = () => {
 
         if (!isVerified && (type === 'Medico' || type === 'Farmacia' || type === 'Laboratorio')) {
           setCurrentScreen('review');
-          return;
+          return true; // Navigation handled
         }
 
-        if (currentScreen === 'splash' || currentScreen === 'welcome' || (currentScreen === 'login' && !roleMapping[type])) {
+        if (currentScreen === 'splash' || currentScreen === 'welcome' || currentScreen === 'login') {
           const screen = role === 'patient' ? 'home' : `${role}_dashboard` as ScreenState;
           setCurrentScreen(screen);
+          return true; // Navigation handled
         }
       } else {
         console.error('Profile result success false:', result);
@@ -245,6 +246,7 @@ const App: React.FC = () => {
     } catch (err) {
       console.error("Critical error in fetchFullProfile:", err);
     }
+    return false; // Navigation not handled
   };
 
   // --- Public App Auth ---
@@ -256,16 +258,19 @@ const App: React.FC = () => {
     localStorage.setItem('user_role', role);
     localStorage.setItem('user_name', name);
     
-    await fetchFullProfile();
+    const handled = await fetchFullProfile();
     
-    if (role === 'doctor') {
-      setCurrentScreen('doctor_dashboard');
-    } else if (role === 'pharmacy') {
-      setCurrentScreen('pharmacy_dashboard');
-    } else if (role === 'lab') {
-      setCurrentScreen('lab_dashboard');
-    } else {
-      setCurrentScreen('home'); // Paciente
+    // If fetchFullProfile hasn't already redirected, navigate to dashboard
+    if (!handled) {
+      if (role === 'doctor') {
+        setCurrentScreen('doctor_dashboard');
+      } else if (role === 'pharmacy') {
+        setCurrentScreen('pharmacy_dashboard');
+      } else if (role === 'lab') {
+        setCurrentScreen('lab_dashboard');
+      } else {
+        setCurrentScreen('home'); // Patient
+      }
     }
   };
 

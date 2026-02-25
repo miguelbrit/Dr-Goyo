@@ -321,47 +321,57 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
         identityDocUrl, professionalTitleUrl, slotDuration
       } = req.body;
       
-      const doctor = await (prisma.doctor as any).findUnique({
-        where: { profileId: userId }
+      // Upsert Doctor profile to handle cases where it might not exist yet
+      const doctor = await (prisma.doctor as any).upsert({
+        where: { profileId: userId },
+        update: {
+          specialty,
+          license,
+          bio,
+          city,
+          address,
+          insuranceAffiliations,
+          identityDocUrl,
+          professionalTitleUrl,
+          slotDuration: slotDuration ? parseInt(slotDuration.toString()) : undefined,
+          experienceYears: experienceYears ? parseInt(experienceYears.toString()) : undefined,
+          consultationPrice: consultationPrice ? parseFloat(consultationPrice.toString()) : undefined
+        },
+        create: {
+          profileId: userId,
+          specialty: specialty || '',
+          license: license || '',
+          bio: bio || '',
+          city: city || '',
+          address: address || '',
+          insuranceAffiliations: insuranceAffiliations || '',
+          identityDocUrl: identityDocUrl || '',
+          professionalTitleUrl: professionalTitleUrl || '',
+          status: 'PENDING',
+          slotDuration: slotDuration ? parseInt(slotDuration.toString()) : 30,
+          experienceYears: experienceYears ? parseInt(experienceYears.toString()) : 0,
+          consultationPrice: consultationPrice ? parseFloat(consultationPrice.toString()) : 0
+        }
       });
 
-      if (doctor) {
-        await (prisma.doctor as any).update({
-          where: { id: doctor.id },
-          data: {
-            specialty,
-            license,
-            bio,
-            city,
-            address,
-            insuranceAffiliations,
-            identityDocUrl,
-            professionalTitleUrl,
-            slotDuration: slotDuration ? parseInt(slotDuration.toString()) : undefined,
-            experienceYears: experienceYears ? parseInt(experienceYears.toString()) : undefined,
-            consultationPrice: consultationPrice ? parseFloat(consultationPrice.toString()) : undefined
-          }
+      // Update Availability if provided
+      if (availability && Array.isArray(availability)) {
+        // Delete old availability for this doctor
+        await (prisma as any).availability.deleteMany({
+          where: { doctorId: doctor.id }
         });
 
-        // Update Availability if provided
-        if (availability && Array.isArray(availability)) {
-          // Delete old availability for this doctor
-          await (prisma as any).availability.deleteMany({
-            where: { doctorId: doctor.id }
+        // Create new ones
+        if (availability.length > 0) {
+          await (prisma as any).availability.createMany({
+            data: availability.map((a: any) => ({
+              doctorId: doctor.id,
+              dayOfWeek: a.dayOfWeek,
+              startTime: a.startTime,
+              endTime: a.endTime,
+              isActive: a.isActive ?? true
+            }))
           });
-
-          // Create new ones
-          if (availability.length > 0) {
-            await (prisma as any).availability.createMany({
-              data: availability.map((a: any) => ({
-                doctorId: doctor.id,
-                dayOfWeek: a.dayOfWeek,
-                startTime: a.startTime,
-                endTime: a.endTime,
-                isActive: a.isActive ?? true
-              }))
-            });
-          }
         }
       }
     } else if (updatedProfile.type === 'Farmacia') {

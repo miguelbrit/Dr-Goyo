@@ -43,40 +43,120 @@ export const AvatarUploader: React.FC<AvatarUploaderProps> = ({
     setError(null);
 
     try {
+      console.log(`[DEBUG] Iniciando subida para usuario (Prop): ${userId}`);
+      
+      // 1. Garantizar Sesión y UID real de Supabase Auth
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      let currentSession = (await supabase.auth.getSession()).data.session;
+
+      if (!user || userError || !currentSession) {
+        console.warn("[WARN] Sesión no detectada, intentando refrescar...");
+        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+        if (refreshError || !refreshData.session) {
+          throw new Error('AUTH_SESSION_EXPIRED');
+        }
+        currentSession = refreshData.session;
+      }
+
+      // Usamos el ID del usuario de la sesión para la ruta (Garantiza match con RLS)
+      const authUserId = user?.id || currentSession?.user?.id;
+      if (!authUserId) throw new Error('No se pudo determinar el ID de usuario autenticado.');
+
       const fileExt = file.name.split('.').pop();
-      const fileName = `${userId}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const filePath = `avatars/${fileName}`;
+      const fileName = `avatar-${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
+      
+      // ESTRUCTURA CRÍTICA: La política ahora espera strictly: auth_id/archivo.ext
+      const filePath = `${authUserId}/${fileName}`;
+      const bucketName = 'profiles';
 
-      // 1. Upload to Supabase Storage
-      const { data, error: uploadError } = await supabase.storage
-        .from('profiles')
-        .upload(filePath, file);
+      console.log(`[DEBUG] RUTA FINAL DE SUBIDA: "${filePath}" en bucket "${bucketName}"`);
 
-      if (uploadError) throw uploadError;
+      // 2. Subida a Supabase Storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from(bucketName)
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
 
-      // 2. Get Public URL
+      if (uploadError) {
+        console.error("[ERROR] Detalle del fallo en Storage:", uploadError);
+        // Lanzamos el error original para que el catch discriminado lo maneje
+        throw uploadError;
+      }
+
+      // 3. Obtener URL Pública
       const { data: { publicUrl } } = supabase.storage
-        .from('profiles')
+        .from(bucketName)
         .getPublicUrl(filePath);
 
-      // 3. Update Database via Backend API (to maintain consistency with Prisma)
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/users/update-profile', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ imageUrl: publicUrl })
-      });
+      console.log(`[DEBUG] Subida exitosa. Public URL: ${publicUrl}`);
 
-      const result = await response.json();
-      if (!result.success) throw new Error(result.error || 'Error al actualizar base de datos');
+      // 4. Actualizar Base de Datos (Estrategia Frontend-first)
+      // Usamos el userId del prop que es el que Prisma conoce (deberían ser iguales)
+      const targetId = userId || authUserId;
 
+      const { data: existingProfile, error: checkError } = await supabase
+        .from('Profile')
+        .select('id')
+        .eq('id', targetId)
+        .single();
+
+      let dbError;
+      if (existingProfile) {
+        const { error } = await supabase
+          .from('Profile')
+          .update({ image_url: publicUrl })
+          .eq('id', targetId);
+        dbError = error;
+      } else {
+        const { error } = await supabase
+          .from('Profile')
+          .insert({ 
+            id: targetId, 
+            image_url: publicUrl,
+            name: userName,
+            email: currentSession?.user?.email || (targetId + "@placeholder.com")
+          });
+        dbError = error;
+      }
+
+      if (dbError) {
+        console.error("[ERROR] Error al vincular imagen en Profile table:", dbError);
+        throw dbError;
+      }
+
+      // 5. Notificar éxito al componente padre
       onUploadSuccess(publicUrl);
+
+      // Sincronización secundaria con Backend (Opcional)
+      try {
+        const token = localStorage.getItem('token');
+        await fetch('/api/users/update-profile', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ imageUrl: publicUrl })
+        });
+      } catch (e) {}
+
     } catch (err: any) {
-      console.error('Upload error:', err);
-      setError(err.message || 'Error al subir la imagen');
+      console.error('[CRITICAL] Error en proceso de subida:', err);
+      
+      const message = err.message || '';
+      const status = (err as any).status || (err as any).code;
+
+      if (message === 'AUTH_SESSION_EXPIRED' || message.includes('JWT expired')) {
+        setError('Tu sesión ha expirado realmente. Por favor, vuelve a iniciar sesión.');
+      } else if (status === 400 || status === 403 || message.toLowerCase().includes('row-level security')) {
+        setError(`Error de permisos (Status: ${status}): El servidor rechazó la ruta del archivo. Verifica que la política de Storage permita la ruta "userId/archivo".`);
+      } else if (message.includes('network')) {
+        setError('Error de conexión. Revisa tu internet.');
+      } else {
+        setError(message || 'Error inesperado al subir.');
+      }
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';

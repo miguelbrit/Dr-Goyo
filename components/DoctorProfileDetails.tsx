@@ -17,6 +17,7 @@ export const DoctorProfileDetails: React.FC<DoctorProfileDetailsProps> = ({ user
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   
+  const [hasChanges, setHasChanges] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     surname: '',
@@ -31,6 +32,11 @@ export const DoctorProfileDetails: React.FC<DoctorProfileDetailsProps> = ({ user
     address: '',
     identityDocUrl: '',
     professionalTitleUrl: '',
+  });
+
+  const [scheduleData, setScheduleData] = useState<{ availability: any[], slotDuration: number }>({
+    availability: userProfile?.doctor?.availability || [],
+    slotDuration: userProfile?.doctor?.slotDuration || 30
   });
 
   useEffect(() => {
@@ -50,16 +56,32 @@ export const DoctorProfileDetails: React.FC<DoctorProfileDetailsProps> = ({ user
         identityDocUrl: userProfile.doctor?.identityDocUrl || '',
         professionalTitleUrl: userProfile.doctor?.professionalTitleUrl || '',
       });
+      setScheduleData({
+        availability: userProfile.doctor?.availability || [],
+        slotDuration: userProfile.doctor?.slotDuration || 30
+      });
+      setHasChanges(false);
     }
   }, [userProfile]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    setHasChanges(true);
+  };
+
+  const handleScheduleChange = (data: { availability: any[], slotDuration: number }) => {
+    // Check if real changes occurred to avoid infinite loop
+    if (JSON.stringify(data.availability) !== JSON.stringify(scheduleData.availability) || 
+        data.slotDuration !== scheduleData.slotDuration) {
+      setScheduleData(data);
+      setHasChanges(true);
+    }
   };
 
   const handleUploadSuccess = (url: string) => {
     setFormData(prev => ({ ...prev, imageUrl: url }));
+    setHasChanges(true);
     if (onUpdate) onUpdate();
   };
 
@@ -67,6 +89,11 @@ export const DoctorProfileDetails: React.FC<DoctorProfileDetailsProps> = ({ user
     e.preventDefault();
     setLoading(true);
     setMessage(null);
+
+    // DEBUG LOGS
+    console.log("[DEBUG] Iniciando guardado global...");
+    console.log("[DEBUG] Datos de perfil a enviar:", formData);
+    console.log("[DEBUG] Datos de agenda a enviar:", scheduleData);
 
     try {
       const token = localStorage.getItem('token');
@@ -80,18 +107,23 @@ export const DoctorProfileDetails: React.FC<DoctorProfileDetailsProps> = ({ user
           ...formData,
           experienceYears: parseInt(formData.experienceYears) || 0,
           consultationPrice: parseFloat(formData.consultationPrice) || 0,
+          // Merge schedule data
+          availability: scheduleData.availability,
+          slotDuration: scheduleData.slotDuration
         })
       });
       
       const result = await response.json();
 
       if (result.success) {
-        setMessage({ type: 'success', text: 'Perfil médico actualizado correctamente' });
+        setMessage({ type: 'success', text: 'Cambios globales guardados correctamente' });
+        setHasChanges(false);
         if (onUpdate) onUpdate();
       } else {
         throw new Error(result.error || 'Error al guardar cambios');
       }
     } catch (err: any) {
+      console.error("[ERROR] Fallo en el guardado unificado:", err);
       setMessage({ type: 'error', text: err.message });
     } finally {
       setLoading(false);
@@ -100,7 +132,7 @@ export const DoctorProfileDetails: React.FC<DoctorProfileDetailsProps> = ({ user
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500 max-w-2xl mx-auto">
+    <div className="space-y-8 animate-in fade-in duration-500 max-w-2xl mx-auto pb-32">
       {/* Avatar Section */}
       <div className="bg-white p-6 rounded-3xl shadow-soft border border-gray-100 flex flex-col items-center">
         <AvatarUploader 
@@ -260,18 +292,27 @@ export const DoctorProfileDetails: React.FC<DoctorProfileDetailsProps> = ({ user
           doctorId={userProfile?.doctor?.id} 
           initialAvailability={userProfile?.doctor?.availability} 
           initialSlotDuration={userProfile?.doctor?.slotDuration}
-          onSave={onUpdate}
+          onChange={handleScheduleChange}
         />
 
-        <div className="pt-2">
-          <Button 
-            label={loading ? "Guardando cambios..." : "Actualizar Perfil Profesional"} 
-            fullWidth 
-            variant="primary" 
-            type="submit"
-            disabled={loading}
-            icon={loading ? Loader2 : undefined}
-          />
+        {/* Botón Guardar - Sticky al fondo */}
+        <div className="fixed bottom-0 left-0 right-0 p-6 bg-gray-bg/80 backdrop-blur-md border-t border-gray-100 z-50 lg:left-64">
+           <div className="max-w-2xl mx-auto">
+              <Button 
+                label={loading ? "Guardando..." : "Guardar Cambios"} 
+                fullWidth 
+                variant="primary" 
+                type="submit"
+                disabled={loading || !hasChanges}
+                icon={loading ? Loader2 : Check}
+                className={`shadow-2xl transition-all ${hasChanges ? 'shadow-primary/40' : 'opacity-50 grayscale'}`}
+              />
+              {!hasChanges && !loading && (
+                <p className="text-[10px] text-center text-gray-400 mt-2 font-bold uppercase tracking-widest">
+                  No hay cambios pendientes
+                </p>
+              )}
+           </div>
         </div>
       </form>
     </div>

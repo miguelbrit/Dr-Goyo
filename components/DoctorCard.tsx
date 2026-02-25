@@ -1,5 +1,5 @@
 import React from 'react';
-import { MapPin, Clock, BadgeCheck } from 'lucide-react';
+import { MapPin, Clock, BadgeCheck, User } from 'lucide-react';
 import { Button } from './Button';
 import { Rating } from './Rating';
 import { Doctor } from '../types';
@@ -12,6 +12,15 @@ interface DoctorCardProps {
 }
 
 export const DoctorCard: React.FC<DoctorCardProps> = ({ doctor, onBook, onClick, compact = false }) => {
+  // Get Initials for Placeholder
+  const initials = doctor.name
+    .split(' ')
+    .filter(n => !n.toLowerCase().includes('.') && n.length > 0)
+    .slice(0, 2)
+    .map(n => n[0])
+    .join('')
+    .toUpperCase();
+
   return (
     <div 
       onClick={onClick}
@@ -24,11 +33,18 @@ export const DoctorCard: React.FC<DoctorCardProps> = ({ doctor, onBook, onClick,
           </div>
         )}
         
-        <img 
-          src={doctor.image} 
-          alt={doctor.name} 
-          className="w-20 h-20 rounded-xl object-cover bg-gray-bg flex-shrink-0"
-        />
+        {doctor.image ? (
+          <img 
+            src={doctor.image} 
+            alt={doctor.name} 
+            className="w-20 h-20 rounded-xl object-cover bg-gray-bg flex-shrink-0 border border-border-main"
+          />
+        ) : (
+          <div className="w-20 h-20 rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 flex flex-col items-center justify-center flex-shrink-0 border border-border-main text-gray-400 relative overflow-hidden group">
+             <User size={32} className="opacity-40 group-hover:scale-110 transition-transform" />
+             <span className="absolute bottom-1 right-1 text-[8px] font-bold opacity-30">{initials}</span>
+          </div>
+        )}
         
         <div className="flex-1 min-w-0">
           <div className="flex justify-between items-start">

@@ -118,7 +118,7 @@ export const PatientHomeScreen: React.FC<PatientHomeScreenProps> = ({
           </h1>
           <button onClick={() => setIsSidebarOpen(true)} className="flex-shrink-0">
             <Avatar 
-              src={userProfile?.imageUrl || `https://i.pravatar.cc/150?u=${userName}`} 
+              src={userProfile?.imageUrl} 
               alt={userName} 
               size="md" 
             />
@@ -237,7 +237,7 @@ export const PatientHomeScreen: React.FC<PatientHomeScreenProps> = ({
         isOpen={isSidebarOpen} 
         onClose={() => setIsSidebarOpen(false)} 
         userName={userName}
-        userImage={userProfile?.imageUrl || `https://i.pravatar.cc/150?u=${userName}`}
+        userImage={userProfile?.imageUrl}
         userProfile={userProfile}
         onProfileUpdate={onProfileUpdate}
         onLogout={onLogout}

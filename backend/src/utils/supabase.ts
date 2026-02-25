@@ -12,8 +12,8 @@ const getEnv = (key: string) => {
   return value ? value.trim() : '';
 };
 
-const supabaseUrl = getEnv('SUPABASE_URL') || getEnv('NEXT_PUBLIC_SUPABASE_URL');
-const supabaseServiceKey = getEnv('SUPABASE_SERVICE_ROLE_KEY') || getEnv('SUPABASE_SERVICE_KEY');
+const supabaseUrl = getEnv('SUPABASE_URL') || getEnv('NEXT_PUBLIC_SUPABASE_URL') || getEnv('VITE_SUPABASE_URL');
+const supabaseServiceKey = getEnv('SUPABASE_SERVICE_ROLE_KEY') || getEnv('SUPABASE_SERVICE_KEY') || getEnv('VITE_SUPABASE_ANON_KEY');
 
 if (!supabaseUrl || !supabaseServiceKey) {
   console.error('[CRITICAL] Supabase Configuration Error:');
